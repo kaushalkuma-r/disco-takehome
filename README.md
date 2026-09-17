@@ -1,50 +1,68 @@
-# Take-Home Exercise: Ad Placement & Creative Generation
+# Disco Campaign Studio
 
-Hey, thanks for making it this far. Here's the exercise.
+> Take-home for Disco: an advertiser describes their business in a sentence; the system returns **where to run** (ranked publishers with reasons and exclusions), **who to speak to** (persona-tuned creative), and **how to run it** (a structured, editable campaign config) — with every decision explained, every model call metered in credits, and feedback that repairs the output.
 
-## The problem
+**Status: design phase complete, implementation next.** This first commit contains the product design, the architecture (HLD + LLD), a fully clickable prototype in Disco's design language, and the tooling that reviews it. The FastAPI + Next.js implementation follows the LLD in `docs/design/`.
 
-Build a working prototype where an advertiser describes their business in a sentence or two (something like *"We sell premium dog food for senior dogs, targeting owners who care about joint health"*), and the system produces:
+| Artifact | Where |
+|---|---|
+| Clickable prototype | [`design/prototype/`](design/prototype/) · live: https://claude.ai/artifact/BZcMjBq8WvNTHcMq9Dgsuy |
+| HLD (architecture, deployment shapes, scale-out) | [`docs/design/HLD.md`](docs/design/HLD.md) · rendered [`hld-blueprint.html`](docs/design/hld-blueprint.html) |
+| LLD (agent core, tools, validators, memory, credits, flows, API, data model) | [`docs/design/LLD.md`](docs/design/LLD.md) · rendered [`lld.html`](docs/design/lld.html) |
+| Prototype review (56 screenshots + automated audit) | [`design/review/`](design/review/) |
+| Assignment + glossary | [`docs/ASSIGNMENT.md`](docs/ASSIGNMENT.md) · [`GLOSSARY.md`](GLOSSARY.md) |
+| Mock data pack | [`data/`](data/) |
 
-1. **A ranked list of recommended publishers** from the provided catalog, with reasoning. Show *why* each publisher is a fit, and ideally, why some publishers in the catalog were *excluded*.
+## What it does
 
-2. **3 to 5 ad creative variants** (headline + body copy), each tuned for a different shopper persona that the system thinks is plausible for this advertiser. Make the persona reasoning visible to the user.
+1. **Clarity gate (free).** The brief is scored 0–100 before anything is generated. Below 60, the user answers up to three multiple-choice questions; a vague brief never yields a confident-looking wrong plan.
+2. **Ranked publishers, explained.** Deterministic pre-score (category 35 · persona 30 · AOV 15 · audience 20) plus a bounded LLM adjustment (±15) that must cite a catalog note. Exclusions carry reasons too.
+3. **Persona-tuned creative.** 3–5 variants, each written to a persona's messaging preferences and away from its disinterests, with a fit score and "why this persona".
+4. **Campaign config.** Objective, KPI, bid strategy and ranges, budget/flight, targeting, per-publisher allocation, creative↔placement links — editable, exported as JSON or a one-page PDF brief.
+5. **Checks.** Eleven deterministic validators run after every change; failures name the tool that fixes them and can be repaired with one click.
+6. **Feedback that acts.** 👍/👎 on any publisher, creative, config or interpretation; a 👎 with a comment re-runs only the affected tool.
+7. **Memory.** Brand voice, banned publishers, default budget/bid strategy (preferences) and free-text facts — set explicitly or from chat ("never use Swiftcart"); always visible and deletable.
+8. **Credits.** 100 on signup. Each model-touching action costs a base fee plus 1 credit per 4k weighted tokens (gpt-4.1 counts 2×). Deterministic edits, exports and compare are free. Every charge is a ledger row tied to an interaction.
+9. **Chat as an alternate full workflow** over the same tools, and **History + Compare** across runs and versions.
 
-3. **A structured campaign config**: targeting attributes, suggested budget allocation across recommended publishers, bid strategy, whatever fields you think a real ad system would need to actually run this. Make your own call on the shape of it and justify it in the README.
+## Architecture in one paragraph
 
-We've given you a small mock data pack in `data/`:
+One codebase, two deployment shapes. **Shape A** (demo, Railway free tier): FastAPI serves the Next.js static export and the API from one container. **Shape B** (scale): Vercel serves the frontend, Railway the backend, `NEXT_PUBLIC_API_URL` is the only switch. Supabase provides Auth (email + Google) and Postgres (RLS on every table); OpenAI provides `gpt-4.1-mini` for scoring/clarity/personas/config and `gpt-4.1` for creative and the chat planner. The backend is an **agent core**: an orchestrator (guided · free · repair modes) that only calls typed tools, runs validators, charges credits from real usage, and persists a version per interaction. Details and diagrams: [`docs/design/HLD.md`](docs/design/HLD.md), [`docs/design/LLD.md`](docs/design/LLD.md).
 
-- `publishers.json`: ~20 publishers across categories (apparel, wellness, pet, home, etc.) with audience demographics, AOV, and qualitative notes
-- `shopper_personas.json`: 10 personas with category affinities, messaging preferences, and what they're disinterested in
-- `example_advertisers.txt`: sample advertiser one-liners ranging from clear to deliberately ambiguous
+## Repository layout
 
-If you don't have ad-tech background, see `GLOSSARY.md`. It covers everything you need (advertiser, publisher, campaign config, CPM, creative, targeting, etc.). The JD specifically says we're not looking for someone who grew up in ad-tech, so don't worry if these terms are new to you.
+```
+data/                 publishers.json · shopper_personas.json · example_advertisers.txt (the mock data pack)
+design/prototype/     clickable prototype — index.html + assets/ (no build step)
+design/review/        screenshots and automated audit report of the prototype
+docs/design/          HLD.md · LLD.md · rendered HTML versions
+docs/                 ASSIGNMENT.md (original brief) · GLOSSARY.md at repo root
+tools/                review_prototype.py (screenshot + lint) · smoke_prototype.py (drives the flows)
+backend/  frontend/  prompts/     ← next commits
+```
 
-Use whatever LLM, framework, or stack you want. We don't care if it's Next.js or Streamlit or a CLI with a tiny web front-end glued on. We care that we can click through it and see it work.
+## Running the prototype and its review
 
-## Ground rules
+```bash
+# open the prototype
+xdg-open design/prototype/index.html        # or any static server; demo login is pre-filled, 100 credits on signup
 
-- **Time budget: aim for 6 to 8 hours over a few days.** We would much rather see a tight, working thing than a sprawling half-finished one.
-- **Use AI tools.** Claude Code, Cursor, whatever you live in. We're not testing whether you can type code from scratch. We're testing whether you can direct these tools to ship something real and understand every line that comes out. We will ask you about the code in the follow-up.
-- **No decks. No Figma. No Loom walkthroughs.** Build the thing.
+# review tooling (Python 3.12 + uv)
+uv venv .venv && uv pip install -r tools/requirements.txt && .venv/bin/python -m playwright install chromium
+.venv/bin/python tools/review_prototype.py design/prototype/index.html --out design/review
+.venv/bin/python tools/smoke_prototype.py  design/prototype/index.html
+```
 
-## What to submit
+Both tools exit non-zero on failure so they can gate CI. Current state: 0 errors, 0 warnings across 56 screenshots; smoke test green.
 
-1. **A working demo**, either hosted (Vercel, Render, Railway, wherever) or runnable locally with clear instructions. If local, a single `npm install && npm run dev` or equivalent.
-2. **The code**, in a GitHub repo (public or shared with us).
-3. **Your prompts**, in a `prompts/` directory in the repo. Every prompt your system uses, in whatever structure makes sense to you.
-4. **A one-page README** covering:
-   - What you built and how to run it
-   - What you would do next if you had another week
-   - What you intentionally cut and why
-   - Which parts of this problem you think are genuinely hard vs. which are easy, and where you think the interesting engineering work actually lives
+## Next: implementation plan (6–8 h)
 
-Keep the README to one page. If it spills onto a second, cut something.
+1. Backend skeleton + deterministic `scoring.py` with golden tests
+2. Agent core: registry, tools, validators, memory, credits; prompts in `prompts/`
+3. Frontend: login, wizard, campaign tabs, history, memory, credits (shadcn/ui)
+4. Chat + feedback + PDF export
+5. Dockerfile (Shape A) on Railway, Vercel project (Shape B), one-page submission README
 
-## What we'll do with this
+## Configuration
 
-Our engineering team will read the code and run the demo. If it clears that bar, we'll invite you to a 90-minute follow-up where we go deep. You walk us through the demo, we ask about your technical choices, we'll have you make a live change to the code, and we'll talk about how you'd take this from prototype to production at meaningful scale.
-
-Good luck. Have fun with it.
-
-The Disco team
+Copy `.env.example` to `.env`. Secrets are never committed; the prompt files in `prompts/` will contain no keys.

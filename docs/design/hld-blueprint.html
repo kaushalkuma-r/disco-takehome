@@ -1,0 +1,429 @@
+<title>Campaign Studio Blueprint</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--purple:#7C3AED;--blue:#3B82F6;--purple-50:#F3EEFF;--bg:#FFFFFF;--bg-2:#F7F7FB;--card:#FFFFFF;--ink:#030712;--ink-2:#1F2937;--muted:#64748B;--line:#E5E7EB;--line-2:#EEF0F4;--good:#16A34A;--good-bg:#ECFDF3;--warn:#D97706;--warn-bg:#FFF7E6;--bad:#DC2626;--bad-bg:#FEF2F2;--grad:linear-gradient(135deg,#7C3AED,#3B82F6)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--purple:#8B5CF6;--blue:#60A5FA;--purple-50:#1E1B3A;--bg:#030712;--bg-2:#0B1020;--card:#0F1526;--ink:#F8FAFC;--ink-2:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--line-2:#182032;--good:#4ADE80;--good-bg:#0B2618;--warn:#FBBF24;--warn-bg:#2A1F06;--bad:#F87171;--bad-bg:#2C1010}}
+:root[data-theme="dark"]{--purple:#8B5CF6;--blue:#60A5FA;--purple-50:#1E1B3A;--bg:#030712;--bg-2:#0B1020;--card:#0F1526;--ink:#F8FAFC;--ink-2:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--line-2:#182032;--good:#4ADE80;--good-bg:#0B2618;--warn:#FBBF24;--warn-bg:#2A1F06;--bad:#F87171;--bad-bg:#2C1010}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:32px 80px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:34px;font-weight:800;line-height:1.1}
+h2{font-size:22px;font-weight:700;margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:16px;font-weight:700;margin-top:28px}
+p{margin:10px 0;max-width:72ch}
+ul,ol{margin:8px 0;padding-left:22px;max-width:74ch}li{margin:4px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--bg-2);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+pre{background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.5}
+pre code{background:none;border:none;padding:0}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--purple)}
+.lede{font-size:17px;color:var(--ink-2);max-width:70ch}
+.meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:12px}
+.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}
+.hero .mark{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#fff;margin-bottom:16px}
+.hero .mark svg{width:22px;height:22px}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:20px}
+.toc a{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:13.5px}
+.toc a:hover{border-color:var(--purple);color:var(--purple)}
+.toc a b{color:var(--muted);font-weight:600;font-size:12px}
+.fig{margin:18px 0 6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto}
+.fig pre.mermaid{background:none;border:none;padding:0;overflow:visible}
+.cap{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.tscroll{overflow-x:auto}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--bg-2)}
+.pill.good{background:var(--good-bg);color:var(--good);border-color:transparent}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.pill.bad{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.pill.purple{background:var(--purple-50);color:var(--purple);border-color:transparent}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:14px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card)}
+.card h4{font-size:14px;font-weight:700;margin-bottom:4px}
+.card p{font-size:13.5px;margin:4px 0;color:var(--ink-2)}
+.card .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.callout{border-left:3px solid var(--purple);background:var(--purple-50);padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14px}
+.sw{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.sw div{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+.sw i{display:block;width:76px;height:44px;border-radius:8px;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.two{grid-template-columns:1fr}h1{font-size:28px}}
+a{color:var(--purple)}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+  <div class="eyebrow">Disco take-home · design package</div>
+  <h1>Campaign Studio Blueprint</h1>
+  <p class="lede">HLD, LLD, PRD and design language for the ad placement & creative generation prototype. One codebase, two deployment shapes: a single free-tier service for the demo, and a split frontend/backend for scale.</p>
+  <div class="meta"><span>Stack: FastAPI · Next.js · Supabase · OpenAI</span><span>Deploy: Railway (single) · Vercel + Railway (split)</span><span>Status: proposal for review</span></div>
+  <nav class="toc">
+    <a href="#prd"><b>01</b>Product & requirements</a>
+    <a href="#hld"><b>02</b>High-level architecture</a>
+    <a href="#deploy"><b>03</b>Deployment shapes</a>
+    <a href="#scale"><b>04</b>Scale-out</a>
+    <a href="#backend"><b>05</b>Backend LLD</a>
+    <a href="#pipeline"><b>06</b>Generation pipeline</a>
+    <a href="#data"><b>07</b>Data model</a>
+    <a href="#frontend"><b>08</b>Frontend LLD</a>
+    <a href="#design"><b>09</b>Design language</a>
+    <a href="#plan"><b>10</b>Build plan & cuts</a>
+  </nav>
+</header>
+
+<!-- ================= 01 PRD ================= -->
+<h2 id="prd">01 · Product & requirements</h2>
+<p><b>One sentence:</b> an advertiser describes their business; Campaign Studio returns where to run (ranked publishers with reasons and exclusions), who to speak to (persona-tuned creative), and how to run it (a structured, editable config) — with the reasoning visible at every step.</p>
+<h3>Baseline (from the brief)</h3>
+<div class="tscroll"><table>
+<tr><th>Req</th><th>Requirement</th><th>Acceptance</th></tr>
+<tr><td>R1</td><td>Ranked publishers with reasoning</td><td>≥3 recommended with a per-publisher reason and score breakdown; ≥3 exclusions with reasons</td></tr>
+<tr><td>R2</td><td>3–5 creative variants, one per persona</td><td>Headline ≤80 chars, body ≤240 chars, CTA; persona fit score + "why this persona" shown</td></tr>
+<tr><td>R3</td><td>Structured campaign config</td><td>Objective, KPI, bid strategy + ranges, budget (daily/total/flight), targeting, per-publisher allocation summing to 100, creatives linked to placements</td></tr>
+<tr><td>R4</td><td>Handle messy input</td><td>Vague input never yields a confident plan: clarity score &lt;60 triggers questions; off-topic (B2B SaaS) yields an honest "weak fit" plan</td></tr>
+<tr><td>R5</td><td>Show your work</td><td>Every number on screen has a rationale one click away</td></tr>
+<tr><td>R6</td><td>Prompts in <code>prompts/</code>, one-page README, runnable with one command</td><td>—</td></tr>
+</table></div>
+<h3>Product features (our additions)</h3>
+<div class="cards">
+  <div class="card"><span class="k">Non-negotiable</span><h4>Login & workspaces</h4><p>Supabase Auth (email + Google). Every campaign belongs to a user. Reviewers sign up in 10 seconds.</p></div>
+  <div class="card"><span class="k">Impact</span><h4>Input clarity gate</h4><p>LLM scores clarity 0–100 and extracts signals. Below 60 it asks up to 3 multiple-choice questions before generating. Directly attacks the "messy input" hard part.</p></div>
+  <div class="card"><span class="k">Impact</span><h4>Explainable scoring</h4><p>Deterministic pre-score (category 35 · persona 30 · AOV 15 · audience 20) + bounded LLM adjustment with written reason. Breakdown bars per publisher.</p></div>
+  <div class="card"><span class="k">Impact</span><h4>History & compare</h4><p>Every run is versioned. Pick two runs, see publisher score deltas and headline decisions side-by-side.</p></div>
+  <div class="card"><span class="k">Impact</span><h4>Editable config + export</h4><p>Inline edits, budget sliders that must sum to 100, single-creative regenerate. Export PDF brief and config JSON.</p></div>
+  <div class="card"><span class="k">Impact</span><h4>Chat workflow</h4><p>The same pipeline driven conversationally: brief → clarifying questions → campaign card → "drop Swiftcart", "make B punchier", "export as PDF". Tool-calling over the same service layer.</p></div>
+</div>
+<h3>Non-goals</h3>
+<ul><li>Real auction / pacing simulation, image creative, multi-tenant orgs and roles, billing.</li><li>Fine-tuned models — prompt engineering plus deterministic scoring is the honest scope for 6–8 hours.</li></ul>
+
+<!-- ================= 02 HLD ================= -->
+<h2 id="hld">02 · High-level architecture</h2>
+<p>Three components and two external services. The frontend never talks to OpenAI; the backend never trusts the browser — it verifies Supabase JWTs and enforces row ownership.</p>
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  U([Advertiser<br/>browser]) -->|HTTPS| FE[Next.js frontend<br/>static export · shadcn/ui]
+  FE -->|Supabase JS: sign-in, session| SA[(Supabase Auth)]
+  FE -->|/api/* · Bearer JWT| BE[FastAPI backend]
+  BE -->|verify JWT · JWKS| SA
+  BE -->|SQL via asyncpg| DB[(Supabase Postgres)]
+  BE -->|chat.completions · JSON mode| OAI[OpenAI API]
+  BE -->|HTML → PDF| PDF[WeasyPrint]
+  DATA[(publishers.json<br/>personas.json)] --> BE
+  classDef ext fill:#EBF2FF,stroke:#3B82F6,color:#0B1020
+  classDef core fill:#F3EEFF,stroke:#7C3AED,color:#0B1020
+  class SA,DB,OAI ext
+  class FE,BE core
+</pre></div>
+<p class="cap">Figure 1 · Component view. Purple = we build; blue = managed free-tier services.</p>
+<h3>Responsibilities</h3>
+<div class="tscroll"><table>
+<tr><th>Component</th><th>Owns</th><th>Does not own</th></tr>
+<tr><td>Next.js frontend</td><td>Routing, auth UI, session storage, all rendering, optimistic edits, chat UI</td><td>Any LLM call, any scoring, any secret</td></tr>
+<tr><td>FastAPI backend</td><td>JWT verification, campaign pipeline, scoring, prompt templates, persistence, PDF, chat tool-calling</td><td>Serving UI in split mode</td></tr>
+<tr><td>Supabase</td><td>Users, sessions, Postgres with RLS as defense-in-depth</td><td>Business logic</td></tr>
+</table></div>
+
+<!-- ================= 03 DEPLOY ================= -->
+<h2 id="deploy">03 · Deployment shapes</h2>
+<p>Same repo, same code paths. The only variables are <code>NEXT_PUBLIC_API_URL</code> (empty = same origin) and whether FastAPI mounts the static bundle.</p>
+<div class="two">
+<div>
+<h3>Shape A — single service (demo, Railway free tier)</h3>
+<div class="fig"><pre class="mermaid">
+flowchart TB
+  subgraph RW[Railway · one container]
+    direction TB
+    BE[FastAPI :8000]
+    ST[/frontend/out<br/>static bundle/]
+    BE -->|GET / · StaticFiles| ST
+    BE -->|/api/*| API[[routers]]
+  end
+  B([Browser]) --> RW
+  RW --> SB[(Supabase)]
+  RW --> OAI[OpenAI]
+  classDef ext fill:#EBF2FF,stroke:#3B82F6,color:#0B1020
+  class SB,OAI ext
+</pre></div>
+<ul><li>Multi-stage Dockerfile: <code>node:20</code> builds <code>frontend/</code> with <code>output: 'export'</code>; <code>python:3.12-slim</code> copies <code>out/</code> into the image.</li><li>Same origin → no CORS, no cookie domain issues.</li><li>Free-tier friendly: one 512 MB container, sleeps when idle.</li></ul>
+</div>
+<div>
+<h3>Shape B — split (Vercel + Railway)</h3>
+<div class="fig"><pre class="mermaid">
+flowchart TB
+  B([Browser]) --> V[Vercel CDN<br/>Next.js static]
+  B -->|fetch NEXT_PUBLIC_API_URL| R[Railway<br/>FastAPI · CORS allow-list]
+  V -. no server code .-> V
+  R --> SB[(Supabase)]
+  R --> OAI[OpenAI]
+  classDef ext fill:#EBF2FF,stroke:#3B82F6,color:#0B1020
+  class SB,OAI ext
+</pre></div>
+<ul><li>Frontend on Vercel's edge CDN; backend scales independently.</li><li><code>CORS_ORIGINS</code> env lists the Vercel domain(s).</li><li>Preview deployments per PR come free with Vercel.</li></ul>
+</div>
+</div>
+<div class="callout"><b>Why static export instead of Next.js SSR/BFF:</b> nothing in this product needs server rendering — auth is client-side Supabase, data is per-user and fetched after login. Static export lets one Python process serve everything in Shape A and lets Vercel serve pure files in Shape B. If SSR is ever needed, only <code>next.config</code> and the Dockerfile change.</div>
+
+<!-- ================= 04 SCALE ================= -->
+<h2 id="scale">04 · Scale-out (secondary)</h2>
+<p>What changes when this runs for thousands of advertisers: LLM calls become async jobs, scoring gets a vector index, and the catalog moves from JSON to Postgres.</p>
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  B([Browsers]) --> CDN[Vercel CDN]
+  B --> LB[Load balancer]
+  LB --> API1[FastAPI ×N<br/>stateless]
+  API1 --> Q[(Redis / SQS<br/>job queue)]
+  Q --> W[Workers ×M<br/>LLM pipeline]
+  W --> OAI[OpenAI<br/>batch + fallback model]
+  API1 --> PG[(Postgres<br/>+ pgvector)]
+  W --> PG
+  API1 --> C[(Redis cache<br/>publisher embeddings,<br/>clarity results)]
+  W --> OBS[Tracing · Langfuse/OTel<br/>prompt versions · evals]
+  API1 -. SSE / WebSocket<br/>job progress .-> B
+  classDef ext fill:#EBF2FF,stroke:#3B82F6,color:#0B1020
+  class OAI,PG,Q,C ext
+</pre></div>
+<div class="tscroll"><table>
+<tr><th>Concern</th><th>Prototype</th><th>At scale</th></tr>
+<tr><td>Generation latency (8–15 s)</td><td>Synchronous request; UI shows staged progress</td><td>Job queue + workers; SSE streams stage completions; idempotency key per run</td></tr>
+<tr><td>Publisher matching</td><td>20 publishers, in-memory deterministic score</td><td>10k+ publishers: pgvector embeddings for recall (top-50), deterministic + LLM for rerank</td></tr>
+<tr><td>Cost</td><td>~5 LLM calls/run, gpt-4o-mini</td><td>Cache clarity + parse by input hash; batch creative generation; cheaper model for scoring, stronger for copy</td></tr>
+<tr><td>Quality</td><td>Manual review of examples</td><td>Golden-set evals in CI (ranking NDCG vs human labels, copy rubric via LLM-judge), prompt versioning</td></tr>
+<tr><td>Reliability</td><td>Retry with backoff on OpenAI</td><td>Model fallback, circuit breaker, dead-letter queue, per-user rate limits</td></tr>
+<tr><td>Data</td><td>JSON catalog in repo</td><td>Publishers/personas tables with ops UI; first-party purchase signals feed persona weights</td></tr>
+</table></div>
+
+<!-- ================= 05 BACKEND ================= -->
+<h2 id="backend">05 · Backend LLD (FastAPI)</h2>
+<pre><code>backend/
+  app/
+    main.py            # app factory, CORS, static mount (Shape A), /healthz
+    config.py          # pydantic-settings: OPENAI_API_KEY, SUPABASE_URL, SUPABASE_JWT_SECRET, DATABASE_URL, CORS_ORIGINS
+    auth.py            # get_current_user(): verify Supabase JWT (HS256 secret or JWKS), returns user_id
+    db.py              # asyncpg pool; tiny repository functions (no ORM)
+    catalog.py         # loads publishers.json / personas.json into typed models at startup
+    schemas/           # Pydantic v2: Brief, ClarityResult, PublisherScore, CreativeVariant, CampaignConfig, Campaign
+    services/
+      clarity.py       # score + signals + questions        (LLM, JSON mode)
+      scoring.py       # deterministic pre-score            (pure Python, unit-tested)
+      ranking.py       # LLM adjust + reasons + exclusions  (LLM)
+      personas.py      # pick personas + fit + why          (LLM)
+      creative.py      # one call → 3–5 variants            (LLM)
+      config_builder.py# objective/bid/budget/allocation    (rules + LLM note)
+      pipeline.py      # orchestrates the above, emits stage events
+      chat.py          # tool-calling loop over the services
+      export_pdf.py    # Jinja2 HTML → WeasyPrint
+    routers/
+      auth.py          # GET /api/me
+      campaigns.py     # CRUD + generate + regenerate + export
+      chat.py          # POST /api/chat
+    prompts/ -> ../../prompts   # symlink; every prompt is a .md with frontmatter (name, version, model)
+  tests/               # scoring, schema validation, pipeline with recorded LLM fixtures
+</code></pre>
+<h3>API surface</h3>
+<div class="tscroll"><table>
+<tr><th>Method · Path</th><th>Purpose</th><th>Notes</th></tr>
+<tr><td><code>GET /api/me</code></td><td>Who am I</td><td>Validates JWT; upserts <code>profiles</code> row</td></tr>
+<tr><td><code>POST /api/clarity</code></td><td>Score a brief, return signals + questions</td><td>Cheap; cached by input hash</td></tr>
+<tr><td><code>POST /api/campaigns</code></td><td>Create + generate</td><td>Body: brief, answers[]. Returns full campaign; streams stage events via SSE when <code>Accept: text/event-stream</code></td></tr>
+<tr><td><code>GET /api/campaigns</code> · <code>GET /api/campaigns/{id}</code></td><td>List / read</td><td>Owner-scoped</td></tr>
+<tr><td><code>PATCH /api/campaigns/{id}</code></td><td>Edit config / creatives / drop publisher</td><td>Bumps <code>version</code>, writes <code>campaign_versions</code></td></tr>
+<tr><td><code>POST /api/campaigns/{id}/creatives/{persona_id}/regenerate</code></td><td>Regenerate one variant</td><td>Single LLM call with the current headline as "avoid"</td></tr>
+<tr><td><code>GET /api/campaigns/{id}/export.pdf</code> · <code>.json</code></td><td>Export</td><td>PDF streamed; JSON is the config schema v1</td></tr>
+<tr><td><code>POST /api/chat</code></td><td>Conversational workflow</td><td>Messages[] + campaign_id?; tools: <code>score_clarity</code>, <code>generate_campaign</code>, <code>drop_publisher</code>, <code>regenerate_creative</code>, <code>set_budget</code>, <code>export</code></td></tr>
+<tr><td><code>GET /healthz</code></td><td>Liveness</td><td>Railway healthcheck</td></tr>
+</table></div>
+<h3>Deterministic pre-score (the part we can unit-test)</h3>
+<pre><code>score = 0.35·category + 0.30·persona + 0.15·aov + 0.20·audience      # each 0–100
+
+category : Jaccard-style overlap between brief.categories and publisher.category ∪ subcategories,
+           with a curated adjacency table (pet_food ~ pet_supplies = 0.8, groceries ~ pet_food = 0.3)
+persona  : mean fit of the top-3 personas that are plausible for the publisher's audience
+aov      : 100 − clamp(|log(brief.price_point / publisher.aov)| · 60)   # order-of-magnitude distance
+audience : age-band overlap · gender-skew compatibility · income-tier distance
+
+LLM adjustment is bounded to ±15 and must cite a publisher note. Anything &lt; 40 after adjustment is "excluded".</code></pre>
+<div class="callout"><b>Why hybrid, not pure LLM:</b> the LLM alone will happily rank Velvetline for dog food if the prompt is slightly off, and it can't explain a number it invented. A deterministic backbone makes rankings reproducible, testable, and cheap; the LLM adds judgment (a note like "skeptical of unsubstantiated health claims" should hurt a supplement brand) and writes the reason. That boundary is also the most interesting engineering in the problem.</div>
+
+<!-- ================= 06 PIPELINE ================= -->
+<h2 id="pipeline">06 · Generation pipeline</h2>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant FE as Frontend
+  participant API as FastAPI
+  participant S as services/*
+  participant LLM as OpenAI
+  participant DB as Postgres
+  FE->>API: POST /api/clarity {brief}
+  API->>S: clarity.score(brief)
+  S->>LLM: clarity.md · JSON mode
+  LLM-->>S: {score, signals[], questions[]?, parsed_brief}
+  S-->>FE: 200 {score:24, questions:[…]}
+  Note over FE: score &lt; 60 → ask questions (chips)
+  FE->>API: POST /api/campaigns {brief, answers[]}
+  API->>S: pipeline.run()
+  S->>S: scoring.prescore(parsed_brief, catalog) — pure Python
+  S->>LLM: rank.md (top-10 prescored + notes) → adjust ±15, reasons, exclusions
+  S->>LLM: personas.md → 3–5 personas, fit, why
+  S->>LLM: creative.md → variants (one call, all personas)
+  S->>S: config_builder.build() — rules; LLM writes bid rationale
+  S->>DB: insert campaign + version 1
+  API-->>FE: SSE stage events, then 201 {campaign}
+</pre></div>
+<p class="cap">Figure 4 · Five LLM-touching steps; two of them (pre-score, config) are mostly deterministic. All LLM outputs are validated against Pydantic schemas; a schema failure retries once with the validation error in the prompt.</p>
+<h3>Prompt inventory (<code>prompts/</code>)</h3>
+<div class="tscroll"><table>
+<tr><th>File</th><th>Input</th><th>Output schema</th><th>Model</th></tr>
+<tr><td><code>clarity.md</code></td><td>brief</td><td><code>ClarityResult</code>: score, label, signals, missing, questions[≤3], parsed_brief{product, buyer, price_tier, model, categories}</td><td>gpt-4o-mini</td></tr>
+<tr><td><code>rank.md</td><td>parsed_brief, top-10 prescored publishers with notes</td><td><code>RankResult</code>: adjustments[{id, delta, reason}], excluded[{id, reason}]</td><td>gpt-4o-mini</td></tr>
+<tr><td><code>personas.md</code></td><td>parsed_brief, 10 personas</td><td><code>PersonaPick[]</code>: id, fit, why; skipped[]</td><td>gpt-4o-mini</td></tr>
+<tr><td><code>creative.md</code></td><td>parsed_brief, chosen personas</td><td><code>CreativeVariant[]</code>: persona_id, headline, body, cta, rationale</td><td>gpt-4o (quality matters here)</td></tr>
+<tr><td><code>config_note.md</code></td><td>parsed_brief, ranking, personas</td><td><code>{objective, bid_strategy, rationale}</code></td><td>gpt-4o-mini</td></tr>
+<tr><td><code>chat_system.md</code></td><td>conversation + tools</td><td>tool calls</td><td>gpt-4o</td></tr>
+</table></div>
+
+<!-- ================= 07 DATA ================= -->
+<h2 id="data">07 · Data model (Supabase Postgres)</h2>
+<div class="fig"><pre class="mermaid">
+erDiagram
+  auth_users ||--|| profiles : "1:1"
+  profiles ||--o{ campaigns : owns
+  campaigns ||--o{ campaign_versions : "history"
+  campaigns ||--o{ chat_messages : "conversation"
+  profiles {
+    uuid id PK
+    text email
+    text display_name
+    timestamptz created_at
+  }
+  campaigns {
+    uuid id PK
+    uuid user_id FK
+    text name
+    text brief
+    jsonb clarity
+    jsonb parsed_brief
+    jsonb publishers
+    jsonb excluded
+    jsonb personas
+    jsonb creatives
+    jsonb config
+    text status
+    int version
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  campaign_versions {
+    uuid id PK
+    uuid campaign_id FK
+    int version
+    jsonb snapshot
+    text change_note
+    timestamptz created_at
+  }
+  chat_messages {
+    uuid id PK
+    uuid user_id FK
+    uuid campaign_id FK
+    text role
+    jsonb content
+    timestamptz created_at
+  }
+</pre></div>
+<ul>
+<li><b>JSONB for generated artifacts.</b> Rankings, creatives and config are documents that change shape as prompts evolve; normalising them buys nothing at this scale. Each is validated by a Pydantic schema on write.</li>
+<li><b>Versions as snapshots.</b> Every edit copies the full campaign into <code>campaign_versions</code>; compare works on any two versions or campaigns.</li>
+<li><b>RLS on every table</b> (<code>user_id = auth.uid()</code>) even though FastAPI is the only client — defense in depth, and it lets the frontend read directly later if we want.</li>
+<li>Publishers and personas stay in the repo's JSON for the prototype; the schema reserves <code>publishers</code>/<code>personas</code> tables for scale.</li>
+</ul>
+
+<!-- ================= 08 FRONTEND ================= -->
+<h2 id="frontend">08 · Frontend LLD (Next.js 15 · App Router · static export)</h2>
+<pre><code>frontend/
+  app/
+    (auth)/login/page.tsx            # split brand panel + form; Supabase email/Google
+    (app)/layout.tsx                 # sidebar shell, auth guard (client), theme
+    (app)/dashboard/page.tsx
+    (app)/new/page.tsx               # wizard: Describe → Clarify → Generate → Review
+    (app)/campaigns/[id]/page.tsx    # tabs: Overview · Publishers · Creatives · Config · Export
+    (app)/chat/page.tsx
+    (app)/history/page.tsx
+    (app)/compare/page.tsx           # ?a=&b=
+  components/
+    ui/*                             # shadcn: button, card, badge, tabs, dialog, slider, textarea, toast, table
+    campaign/PublisherCard.tsx       # score, breakdown bars, drop
+    campaign/CreativeCard.tsx        # ad preview, inline edit, regenerate
+    campaign/ConfigForm.tsx          # react-hook-form + zod, live JSON panel
+    campaign/BudgetDonut.tsx         # recharts
+    campaign/ClarityMeter.tsx
+    chat/*                           # MessageList, Composer, ToolResultCard
+  lib/
+    api.ts                           # typed fetch, Bearer token, NEXT_PUBLIC_API_URL || ''
+    supabase.ts                      # browser client
+    types.ts                         # generated from backend OpenAPI (openapi-typescript)
+    store.ts                         # zustand: session, active campaign, chat log
+</code></pre>
+<h3>Pages and what each must prove</h3>
+<div class="tscroll"><table>
+<tr><th>Page</th><th>Job</th><th>Key components</th></tr>
+<tr><td>Login</td><td>Login is real; the product has a brand</td><td>Split layout, Google button, validation, reviewer walkthrough panel</td></tr>
+<tr><td>Dashboard</td><td>Zero-friction start; recent work</td><td>Hero textarea with example chips, stat tiles, recent list, "how it works"</td></tr>
+<tr><td>New campaign</td><td>Clarity gate is visible and useful</td><td>Stepper, clarity meter, signal pills, question chips, staged progress</td></tr>
+<tr><td>Campaign · Publishers</td><td>Explainability</td><td>Ranked cards with breakdown bars, catalog note, drop; exclusions list</td></tr>
+<tr><td>Campaign · Creatives</td><td>Copy feels written for someone</td><td>Ad preview, fit pill, speaks-to / avoids pills, inline edit, regenerate</td></tr>
+<tr><td>Campaign · Config</td><td>A real system could run this</td><td>Form + live JSON, allocation sliders with 100% guard</td></tr>
+<tr><td>Campaign · Export</td><td>Shareable output</td><td>Brief preview, PDF + JSON</td></tr>
+<tr><td>Chat</td><td>Same brain, conversational</td><td>Message list, option chips, campaign cards, suggestion chips</td></tr>
+<tr><td>History / Compare</td><td>Login + DB earn their keep</td><td>Table with multi-select, delta table</td></tr>
+</table></div>
+<h3>State & data flow</h3>
+<ul><li>Supabase session in memory + localStorage (their SDK). <code>api.ts</code> attaches <code>Authorization: Bearer</code>.</li><li>Server state with TanStack Query (campaign list, campaign by id) — mutations update the cache optimistically (drop publisher, edit creative) and roll back on error.</li><li>Generation uses SSE: the wizard's progress list is driven by real stage events, not a timer.</li><li>Auth guard is a client component: unauthenticated → <code>/login</code>. Static export means no middleware; acceptable because the API is the real guard.</li></ul>
+
+<!-- ================= 09 DESIGN ================= -->
+<h2 id="design">09 · Design language (from disconetwork.com)</h2>
+<p>Disco's public site is itself a shadcn/Tailwind build using Inter, so the prototype inherits their tokens directly rather than inventing a look.</p>
+<div class="sw">
+  <div><i style="background:#7C3AED"></i>Primary · disco-purple<br><code>hsl(262 83% 58%)</code></div>
+  <div><i style="background:#3B82F6"></i>Accent · disco-blue<br><code>hsl(217 91% 60%)</code></div>
+  <div><i style="background:linear-gradient(135deg,#7C3AED,#3B82F6)"></i>Brand gradient 135°<br>hero + primary CTA only</div>
+  <div><i style="background:#030712"></i>Ink / dark ground<br><code>hsl(224 71% 4%)</code></div>
+  <div><i style="background:#64748B"></i>Muted text<br><code>hsl(215 16% 47%)</code></div>
+  <div><i style="background:#E5E7EB"></i>Border<br><code>hsl(220 13% 91%)</code></div>
+</div>
+<div class="tscroll"><table>
+<tr><th>Principle</th><th>How it shows up</th></tr>
+<tr><td>Consumer-grade clarity</td><td>One primary action per screen; the gradient is spent only on "Build campaign" and the brand panel. Everything else is quiet.</td></tr>
+<tr><td>State is visible</td><td>Clarity, fit, and score use semantic green / amber / red — separate from the brand accent so "warning" never looks like "brand".</td></tr>
+<tr><td>Reasoning beside numbers</td><td>Every score sits next to its sentence. Breakdown bars, "why this persona", "catalog note". No black boxes.</td></tr>
+<tr><td>Touch-first controls</td><td>40 px buttons, 32 px chips, sliders instead of number inputs for allocation, chips instead of free text for clarifying questions.</td></tr>
+<tr><td>Type</td><td>Inter 400/500/600/700/800. 14 px base, 22 px page titles, tabular numerals for scores and money.</td></tr>
+<tr><td>Radius & elevation</td><td>12 px cards, 10 px controls; one shadow level reserved for the hero input and menus.</td></tr>
+<tr><td>Dark mode</td><td>Token-swapped on Disco's <code>hsl(224 71% 4%)</code>; verified in both themes in the prototype.</td></tr>
+</table></div>
+
+<!-- ================= 10 PLAN ================= -->
+<h2 id="plan">10 · Build plan & intentional cuts</h2>
+<h3>Order of work (fits 6–8 h with AI tooling)</h3>
+<ol>
+<li><b>Backend skeleton</b> — FastAPI, settings, auth dependency, catalog loader, schemas, <code>/healthz</code>. Deterministic <code>scoring.py</code> with tests. <span class="pill">1.5 h</span></li>
+<li><b>Pipeline</b> — clarity, rank, personas, creative, config; prompts in <code>prompts/</code>; recorded-fixture tests. <span class="pill">2 h</span></li>
+<li><b>Frontend</b> — shadcn scaffold, login, wizard, campaign tabs, history. <span class="pill">2.5 h</span></li>
+<li><b>Chat + export</b> — tool-calling endpoint, PDF template. <span class="pill">1 h</span></li>
+<li><b>Deploy</b> — Dockerfile (Shape A) on Railway; Vercel project for Shape B; README. <span class="pill">1 h</span></li>
+</ol>
+<h3>Cut on purpose</h3>
+<ul>
+<li>Image creative, A/B test simulation, real CPM data — the brief says text and "sensible" numbers.</li>
+<li>Org/team roles — a single-user workspace proves login and persistence.</li>
+<li>Vector search — 20 publishers fit in one prompt; the scale section shows where it goes.</li>
+<li>PPTX export — one export format done well beats two done adequately.</li>
+</ul>
+<h3>Hard vs easy</h3>
+<div class="two">
+<div class="card"><h4>Genuinely hard</h4><p>Scoring that is both explainable and right at the margins (Pantrygood for dog food?). Copy that reads persona-specific without parroting the persona's keywords. Deciding when input is "vague enough" to interrupt the user. Keeping LLM JSON stable under prompt changes.</p></div>
+<div class="card"><h4>Easy</h4><p>CRUD, auth wiring, the config shape, PDF, the chat loop once the services exist. The frontend is work, but not risk.</p></div>
+</div>
+<p class="callout"><b>Where the interesting engineering lives:</b> the boundary between deterministic scoring and LLM judgment, and the eval harness that tells you whether a prompt change made rankings better or just different.</p>
+</div>

@@ -1,0 +1,576 @@
+<title>Campaign Studio LLD</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--purple:#7C3AED;--blue:#3B82F6;--purple-50:#F3EEFF;--bg:#FFFFFF;--bg-2:#F7F7FB;--card:#FFFFFF;--ink:#030712;--ink-2:#1F2937;--muted:#64748B;--line:#E5E7EB;--line-2:#EEF0F4;--good:#16A34A;--good-bg:#ECFDF3;--warn:#D97706;--warn-bg:#FFF7E6;--bad:#DC2626;--bad-bg:#FEF2F2;--grad:linear-gradient(135deg,#7C3AED,#3B82F6)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--purple:#8B5CF6;--blue:#60A5FA;--purple-50:#1E1B3A;--bg:#030712;--bg-2:#0B1020;--card:#0F1526;--ink:#F8FAFC;--ink-2:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--line-2:#182032;--good:#4ADE80;--good-bg:#0B2618;--warn:#FBBF24;--warn-bg:#2A1F06;--bad:#F87171;--bad-bg:#2C1010}}
+:root[data-theme="dark"]{--purple:#8B5CF6;--blue:#60A5FA;--purple-50:#1E1B3A;--bg:#030712;--bg-2:#0B1020;--card:#0F1526;--ink:#F8FAFC;--ink-2:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--line-2:#182032;--good:#4ADE80;--good-bg:#0B2618;--warn:#FBBF24;--warn-bg:#2A1F06;--bad:#F87171;--bad-bg:#2C1010}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:32px 80px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:34px;font-weight:800;line-height:1.1}
+h2{font-size:22px;font-weight:700;margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:16px;font-weight:700;margin-top:28px}
+h4{font-size:14px;font-weight:700;margin-top:18px}
+p{margin:10px 0;max-width:74ch}
+ul,ol{margin:8px 0;padding-left:22px;max-width:76ch}li{margin:4px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--bg-2);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+pre{background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.5}
+pre code{background:none;border:none;padding:0}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--purple)}
+.lede{font-size:17px;color:var(--ink-2);max-width:72ch}
+.meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:12px}
+.hero{padding-bottom:28px;border-bottom:1px solid var(--line)}
+.hero .mark{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#fff;margin-bottom:16px}
+.hero .mark svg{width:22px;height:22px}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:20px}
+.toc a{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:13.5px}
+.toc a:hover{border-color:var(--purple);color:var(--purple)}
+.toc a b{color:var(--muted);font-weight:600;font-size:12px}
+.fig{margin:18px 0 6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto}
+.fig pre.mermaid{background:none;border:none;padding:0;overflow:visible}
+.cap{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.tscroll{overflow-x:auto}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--bg-2)}
+.pill.good{background:var(--good-bg);color:var(--good);border-color:transparent}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.pill.bad{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.pill.purple{background:var(--purple-50);color:var(--purple);border-color:transparent}
+.callout{border-left:3px solid var(--purple);background:var(--purple-50);padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card)}
+.card h4{font-size:14px;font-weight:700;margin:0 0 4px}
+.card p{font-size:13.5px;margin:4px 0;color:var(--ink-2)}
+.card .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+a{color:var(--purple)}
+.num{font-variant-numeric:tabular-nums}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></div>
+  <div class="eyebrow">Disco take-home · low-level design v2</div>
+  <h1>Campaign Studio LLD</h1>
+  <p class="lede">Internals of the agentic campaign brain and every point of contact on the platform: auth, wizard, chat, feedback, memory, credits, export, history. Companion to the HLD blueprint.</p>
+  <div class="meta"><span>FastAPI · Next.js static export · Supabase · OpenAI (gpt-4.1 / gpt-4.1-mini)</span><span>Playbooks: removed (covered by preferences + re-run)</span></div>
+  <nav class="toc">
+    <a href="#overview"><b>01</b>System overview</a>
+    <a href="#agent"><b>02</b>Agent core internals</a>
+    <a href="#tools"><b>03</b>Tool registry</a>
+    <a href="#validators"><b>04</b>Validators & repair</a>
+    <a href="#memory"><b>05</b>Memory</a>
+    <a href="#credits"><b>06</b>Credits</a>
+    <a href="#flows"><b>07</b>Touchpoint flows</a>
+    <a href="#api"><b>08</b>API contract</a>
+    <a href="#data"><b>09</b>Data model</a>
+    <a href="#frontend"><b>10</b>Frontend internals</a>
+    <a href="#errors"><b>11</b>Errors, limits, observability</a>
+    <a href="#tests"><b>12</b>Testing strategy</a>
+  </nav>
+</header>
+
+<!-- ============ 01 ============ -->
+<h2 id="overview">01 · System overview</h2>
+<p>Every user action that touches the model is an <b>interaction</b> inside a <b>thread</b> (one thread per campaign). The wizard, the chat, and the feedback buttons are three front doors into one <b>orchestrator</b>, which only ever calls typed <b>tools</b>, then runs <b>validators</b>, then <b>charges credits</b> from real token usage, then persists a <b>version</b>.</p>
+<div class="fig"><pre class="mermaid">
+flowchart LR
+  subgraph FE[Next.js frontend]
+    W[Wizard]:::fe
+    C[Chat]:::fe
+    F[Feedback 👍👎]:::fe
+    M[Memory page]:::fe
+    K[Credits page]:::fe
+    H[History / Compare]:::fe
+  end
+  subgraph BE[FastAPI backend]
+    R[routers/*]:::be
+    AUTH[auth.py<br/>JWT verify]:::be
+    ORC[agent/orchestrator.py<br/>guided · free · repair]:::core
+    REG[agent/registry.py]:::core
+    T[agent/tools/*]:::core
+    V[agent/validators/*]:::core
+    MEM[agent/memory.py]:::core
+    CR[billing/credits.py]:::core
+    TH[agent/threads.py]:::core
+    LLM[llm/client.py<br/>usage capture · retry]:::be
+  end
+  W & C & F --> R
+  M & K & H --> R
+  R --> AUTH --> ORC
+  ORC --> REG --> T
+  ORC --> V
+  ORC --> MEM
+  ORC --> CR
+  ORC --> TH
+  T --> LLM --> OAI[(OpenAI)]:::ext
+  T & V & MEM & CR & TH --> DB[(Supabase Postgres)]:::ext
+  AUTH --> SA[(Supabase Auth)]:::ext
+  classDef fe fill:#EBF2FF,stroke:#3B82F6,color:#0B1020
+  classDef be fill:#F7F7FB,stroke:#94A3B8,color:#0B1020
+  classDef core fill:#F3EEFF,stroke:#7C3AED,color:#0B1020
+  classDef ext fill:#fff,stroke:#64748B,color:#0B1020,stroke-dasharray:4 3
+</pre></div>
+<p class="cap">Figure 1 · Purple = agent core; blue = UI touchpoints; dashed = managed services.</p>
+<h3>Backend module map</h3>
+<pre><code>backend/app/
+  main.py                 # app factory; CORS; static mount when SERVE_STATIC=1; /healthz
+  config.py               # pydantic-settings (OPENAI_API_KEY, SUPABASE_URL, SUPABASE_JWT_SECRET, DATABASE_URL, CORS_ORIGINS, MODELS)
+  auth.py                 # get_current_user() -> UserCtx(user_id, email); upserts profile on first call
+  db.py                   # asyncpg pool; `async with db.tx() as conn` helper
+  catalog.py              # Publisher/Persona models loaded from data/*.json at startup; adjacency table
+  llm/
+    client.py             # OpenAI wrapper: JSON-schema mode, retry(2, backoff), returns (parsed, Usage)
+    usage.py              # Usage dataclass; per-interaction accumulator (context var)
+  agent/
+    orchestrator.py       # run(thread, interaction, mode, goal, ctx) -> AgentResult
+    registry.py           # Tool[BaseModel, BaseModel] base; @tool decorator; to_openai_schema()
+    tools/                # one file per tool (see §03)
+    validators/           # one file per check (see §04); run_all(campaign) -> list[ValidationResult]
+    memory.py             # load(user_id) -> MemoryBlock; extract_candidates(text) -> Preference?
+    feedback.py           # record(); to_repair_action(feedback) -> ToolCall
+    threads.py            # create_thread(); open_interaction(); close_interaction(status, usage, cost)
+    prompts.py            # loads ../../prompts/*.md (frontmatter: name, version, model) with caching
+  billing/
+    credits.py            # estimate(); reserve(); settle(); balance(); ledger()
+    pricing.py            # PRICE table + tokens_to_credits()
+  services/
+    scoring.py            # deterministic prescore (pure; unit-tested)
+    config_builder.py     # rules for objective/bid/budget/allocation
+    export_pdf.py         # Jinja2 template -> WeasyPrint
+  routers/
+    me.py campaigns.py chat.py feedback.py memory.py credits.py export.py
+  schemas/                # Pydantic v2 domain models shared by tools, DB rows and API
+</code></pre>
+
+<!-- ============ 02 ============ -->
+<h2 id="agent">02 · Agent core internals</h2>
+<h3>2.1 Orchestrator state machine</h3>
+<div class="fig"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Authorize
+  Authorize --> Estimate: user ok
+  Estimate --> Rejected: balance &lt; base cost
+  Estimate --> Plan: reserve(base)
+  Plan --> CallTool: next tool from plan (guided) or LLM tool-choice (free)
+  CallTool --> Validate: tool returns
+  CallTool --> Failed: tool error after retry
+  Validate --> Repair: failures &amp;&amp; repairs &lt; 2
+  Repair --> CallTool: re-call the tool named by the failing check, with error attached
+  Validate --> Persist: ok or repairs exhausted (warnings kept)
+  Plan --> Persist: plan complete
+  Persist --> Settle: write version + validation_results
+  Settle --> Done: charge actual usage
+  Failed --> Release: refund reservation
+  Rejected --> [*]
+  Release --> [*]
+  Done --> [*]
+</pre></div>
+<h3>2.2 Modes</h3>
+<div class="tscroll"><table>
+<tr><th>Mode</th><th>Entered from</th><th>Who picks tools</th><th>Plan</th></tr>
+<tr><td><code>guided</code></td><td>Wizard "Generate"</td><td>Code (fixed list)</td><td><code>[prescore_publishers, rank_publishers, pick_personas, write_creatives, build_config]</code></td></tr>
+<tr><td><code>free</code></td><td>Chat message</td><td>LLM via function calling, max 6 tool calls per turn</td><td>Emergent; system prompt lists tools and the campaign's current state summary</td></tr>
+<tr><td><code>repair</code></td><td>👎 with comment, or validator failure</td><td>Code maps feedback target → one tool</td><td>Single tool call with <code>instruction</code></td></tr>
+</table></div>
+<h3>2.3 Context passed to every tool</h3>
+<pre><code>class AgentCtx(BaseModel):
+    user: UserCtx                 # id, email
+    thread_id: UUID
+    interaction_id: UUID
+    campaign: Campaign | None     # current state (mutable through tools)
+    memory: MemoryBlock           # preferences + facts, rendered for prompts
+    catalog: Catalog              # publishers, personas, adjacency
+    usage: UsageAccumulator       # every LLM call adds tokens here
+    emit: Callable[[StageEvent], None]   # SSE progress</code></pre>
+<h3>2.4 Free-mode system prompt (chat) — structure</h3>
+<pre><code>prompts/chat_system.md
+---
+name: chat_system   version: 3   model: gpt-4.1
+---
+You are Campaign Studio's planner. You never write campaign content yourself; you call tools.
+## User memory
+{{ memory.render() }}                      # "Brand voice: no exclamation marks. Banned publishers: Swiftcart. Fact: AOV $85."
+## Current campaign (summary, if any)
+{{ campaign.summary() }}                   # name, top publishers+scores, personas, budget, version
+## Rules
+- If the brief's clarity &lt; 60, call score_clarity and ask the returned questions; do not generate.
+- One generate_campaign per brief. Edits use the smallest tool that does the job.
+- Deterministic edits (drop_publisher, set_budget) cost no credits — prefer them when they satisfy the request.
+- When the user says "always" / "never", call save_preference after doing the edit.
+- Answer in ≤ 3 sentences; the UI renders tool results as cards.</code></pre>
+
+<!-- ============ 03 ============ -->
+<h2 id="tools">03 · Tool registry</h2>
+<p>A tool is a class with typed <code>Input</code>/<code>Output</code> Pydantic models, a <code>cost</code> descriptor and an async <code>run(ctx, input)</code>. The registry exports OpenAI function schemas from the same models, so chat and code paths can't drift.</p>
+<pre><code>class Tool(Generic[I, O]):
+    name: str; description: str
+    Input: type[I]; Output: type[O]
+    cost: Cost              # Cost(base=10, usage=True) | Cost.free()
+    mutates: bool           # True → bumps campaign version + runs validators
+    async def run(self, ctx: AgentCtx, inp: I) -> O: ...
+
+@register
+class RankPublishers(Tool[RankIn, RankOut]):
+    cost = Cost(base=0, usage=True); mutates = True
+    async def run(self, ctx, inp):
+        pre = scoring.prescore(ctx.campaign.parsed_brief, ctx.catalog)        # deterministic
+        top = pre[:10]
+        out, usage = await llm.call("rank", RankOut, {"brief": ..., "candidates": top, "memory": ctx.memory})
+        ctx.usage.add("rank", usage)
+        return merge_bounded(pre, out, max_delta=15, exclude_below=40)</code></pre>
+<div class="tscroll"><table>
+<tr><th>Tool</th><th>Input → Output</th><th>LLM</th><th>Cost</th><th>Mutates</th><th>Notes</th></tr>
+<tr><td><code>score_clarity</code></td><td>brief, answers[] → ClarityResult</td><td>4.1-mini</td><td>free</td><td>no</td><td>Cached by sha256(brief+answers) for 24 h</td></tr>
+<tr><td><code>prescore_publishers</code></td><td>parsed_brief → PreScore[20]</td><td>—</td><td>free</td><td>no</td><td>Pure Python; unit-tested against fixtures</td></tr>
+<tr><td><code>rank_publishers</code></td><td>prescores → ranked[], excluded[]</td><td>4.1-mini</td><td>usage</td><td>yes</td><td>LLM delta bounded ±15; must cite a catalog note</td></tr>
+<tr><td><code>pick_personas</code></td><td>parsed_brief, ranked → personas[3–5], skipped[]</td><td>4.1-mini</td><td>usage</td><td>yes</td><td>Fit 0–100 + why</td></tr>
+<tr><td><code>write_creatives</code></td><td>personas, memory → CreativeVariant[]</td><td>4.1</td><td>usage ×2</td><td>yes</td><td>One call for all; brand-voice preferences injected as hard constraints</td></tr>
+<tr><td><code>build_config</code></td><td>ranked, personas, brief → CampaignConfig</td><td>4.1-mini (rationale only)</td><td>usage</td><td>yes</td><td>Allocation = fit × log(reach), capped at 45%, normalised to 100</td></tr>
+<tr><td><code>generate_campaign</code></td><td>brief, answers → Campaign</td><td>composite</td><td>base 10 + usage</td><td>yes</td><td>Chat-facing wrapper that runs the guided plan</td></tr>
+<tr><td><code>regenerate_creative</code></td><td>persona_id, instruction? → CreativeVariant</td><td>4.1</td><td>base 2 + usage</td><td>yes</td><td>Previous headline passed as "avoid"</td></tr>
+<tr><td><code>drop_publisher</code></td><td>publisher_id, reason? → Campaign</td><td>—</td><td>free</td><td>yes</td><td>Moves to excluded, re-normalises allocation</td></tr>
+<tr><td><code>set_budget</code></td><td>total?, daily?, flight? → Campaign</td><td>—</td><td>free</td><td>yes</td><td>Recomputes per-publisher $ from pct</td></tr>
+<tr><td><code>update_creative</code></td><td>persona_id, headline?, body?, cta? → Campaign</td><td>—</td><td>free</td><td>yes</td><td>Manual edit path</td></tr>
+<tr><td><code>save_preference</code></td><td>key, value, source → Preference</td><td>—</td><td>free</td><td>no</td><td>Upsert; shown on Memory page</td></tr>
+<tr><td><code>remember_fact</code></td><td>text, scope → Fact</td><td>—</td><td>free</td><td>no</td><td>Per user or per campaign</td></tr>
+<tr><td><code>export_brief</code></td><td>format → url</td><td>—</td><td>free</td><td>no</td><td>Returns signed path to <code>/api/campaigns/{id}/export.pdf</code></td></tr>
+</table></div>
+
+<!-- ============ 04 ============ -->
+<h2 id="validators">04 · Validators & repair</h2>
+<p>Validators are pure functions <code>(Campaign, Catalog) → ValidationResult</code>. They run after every mutating tool and are stored per interaction; the campaign page shows them as a <b>Checks</b> panel. A failing check names the tool that can fix it; the orchestrator re-calls that tool once with the failure text appended as <code>instruction</code>.</p>
+<div class="tscroll"><table>
+<tr><th>Check id</th><th>Rule</th><th>Severity</th><th>Repair tool</th></tr>
+<tr><td><code>alloc_sums_100</code></td><td>Σ allocation_pct == 100 and every pct ≥ 0</td><td>error</td><td><code>build_config</code></td></tr>
+<tr><td><code>alloc_cap_45</code></td><td>No publisher &gt; 45% unless only one publisher</td><td>warning</td><td><code>build_config</code></td></tr>
+<tr><td><code>no_excluded_in_alloc</code></td><td>Every allocation id ∈ recommended</td><td>error</td><td><code>build_config</code></td></tr>
+<tr><td><code>min_publishers</code></td><td>≥ 3 recommended (unless brief is off-category → warning with explanation)</td><td>warning</td><td><code>rank_publishers</code></td></tr>
+<tr><td><code>reason_present</code></td><td>Every recommended/excluded publisher has a non-empty reason ≥ 40 chars</td><td>error</td><td><code>rank_publishers</code></td></tr>
+<tr><td><code>creative_lengths</code></td><td>headline ≤ 80, body 60–240, cta ≤ 24 chars</td><td>error</td><td><code>regenerate_creative</code></td></tr>
+<tr><td><code>creative_avoids_disinterest</code></td><td>No token from persona.disinterested_in appears in its creative (stemmed match)</td><td>warning</td><td><code>regenerate_creative</code></td></tr>
+<tr><td><code>creative_uses_preference</code></td><td>Brand-voice preferences respected (e.g. no "!" if preference says so)</td><td>error</td><td><code>regenerate_creative</code></td></tr>
+<tr><td><code>persona_fit_floor</code></td><td>Every chosen persona fit ≥ 40</td><td>warning</td><td><code>pick_personas</code></td></tr>
+<tr><td><code>aov_sanity</code></td><td>If brief.price_tier is premium, no recommended publisher with AOV &lt; 0.3 × implied price unless reason mentions it</td><td>warning</td><td><code>rank_publishers</code></td></tr>
+<tr><td><code>budget_sanity</code></td><td>daily × flight_days within ±10% of total</td><td>error</td><td><code>set_budget</code></td></tr>
+<tr><td><code>banned_publishers</code></td><td>No publisher in preferences.banned_publishers is recommended</td><td>error</td><td><code>drop_publisher</code></td></tr>
+</table></div>
+<pre><code>class ValidationResult(BaseModel):
+    check: str; severity: Literal["error","warning"]; passed: bool
+    message: str; target: dict      # e.g. {"publisher_id": "pub_001"} or {"persona_id": "persona_003"}
+    repair_tool: str | None</code></pre>
+<div class="callout">Repairs are bounded (2 per interaction) and count toward the same interaction's usage — a repair never opens a new credit charge. If errors remain after repairs, the campaign is still saved with <code>status="needs_review"</code> and the Checks panel shows what is wrong; the user is never left with nothing.</div>
+
+<!-- ============ 05 ============ -->
+<h2 id="memory">05 · Memory (preferences + facts)</h2>
+<div class="tscroll"><table>
+<tr><th>Kind</th><th>Examples</th><th>Set by</th><th>Used by</th></tr>
+<tr><td><b>Preference</b> (typed key)</td><td><code>brand_voice: "no exclamation marks; understated"</code> · <code>banned_publishers: ["pub_001"]</code> · <code>default_daily_budget: 300</code> · <code>bid_strategy_default: target_cpa</code></td><td>Memory page form; chat "always/never"; 👎 → "save as preference?"</td><td>write_creatives (hard constraint), rank_publishers (ban), build_config (defaults), validators</td></tr>
+<tr><td><b>Fact</b> (free text, scoped)</td><td>"Our AOV is $85" (user) · "We can't ship to Canada" (user) · "Launch is Nov 15" (campaign)</td><td>Chat "remember that…"; Memory page</td><td>All LLM prompts via <code>memory.render()</code></td></tr>
+</table></div>
+<h4>Extraction rule (no LLM in the hot path)</h4>
+<pre><code>PATTERNS = [r"\b(always|never)\b", r"\bremember (that )?", r"\bfrom now on\b", r"\bour (aov|budget|price|launch)\b"]
+# If a chat message or feedback comment matches, the orchestrator adds `save_preference`/`remember_fact`
+# to the plan AFTER the requested edit, and the reply ends with "Saved to memory: …" and an undo link.</code></pre>
+<p><code>MemoryBlock.render()</code> emits ≤ 600 tokens: preferences first (as constraints), then the 10 most recent facts. The Memory page lists every entry with source ("from chat, Sep 16") and a delete button — the user can always see what the system believes.</p>
+
+<!-- ============ 06 ============ -->
+<h2 id="credits">06 · Credits</h2>
+<h3>6.1 Pricing table (<code>billing/pricing.py</code>)</h3>
+<pre><code>SIGNUP_GRANT = 100
+TOKENS_PER_CREDIT = 4_000                     # 1 credit per 4k weighted tokens
+MODEL_WEIGHT = {"gpt-4.1-mini": 1.0, "gpt-4.1": 2.0}
+BASE = {"generate_campaign": 10, "regenerate_creative": 2, "chat_llm_edit": 1, "feedback_repair": 1}
+def tokens_to_credits(usage: Usage) -> int:
+    weighted = sum(u.total_tokens * MODEL_WEIGHT[u.model] for u in usage.calls)
+    return ceil(weighted / TOKENS_PER_CREDIT)</code></pre>
+<h3>6.2 Reserve → settle</h3>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant O as Orchestrator
+  participant C as billing/credits.py
+  participant DB as Postgres
+  O->>C: estimate(action) → base, est_usage
+  O->>C: reserve(user, interaction, base)
+  C->>DB: BEGIN; SELECT credit_balance FROM profiles WHERE id=$1 FOR UPDATE
+  alt balance &lt; base
+    C-->>O: InsufficientCredits(balance, needed)
+    O-->>O: abort → 402
+  else
+    C->>DB: INSERT credit_ledger(delta=-base, reason='reserve', interaction_id)
+    C->>DB: UPDATE profiles SET credit_balance = credit_balance - base; COMMIT
+  end
+  O->>O: run tools (usage accumulates)
+  O->>C: settle(interaction, usage)
+  C->>DB: INSERT credit_ledger(delta=-tokens_to_credits(usage), reason='usage', usage jsonb)
+  C->>DB: UPDATE profiles.credit_balance
+  Note over O,C: on failure: release(interaction) inserts +base with reason='refund'
+</pre></div>
+<ul>
+<li>Balance is denormalised on <code>profiles.credit_balance</code> and guarded by <code>FOR UPDATE</code>; the ledger is the source of truth and a nightly job (or a test) asserts <code>SUM(delta) == credit_balance</code>.</li>
+<li>Deterministic tools carry <code>Cost.free()</code> and never touch billing, so an out-of-credits user can still edit, drop, export and compare.</li>
+<li>The UI's cost preview calls <code>GET /api/credits/estimate?action=generate_campaign&brief_len=…</code> which returns <code>{base, est_usage_credits, balance}</code>; estimate uses median tokens from the last 50 runs of that action (falls back to constants).</li>
+</ul>
+
+<!-- ============ 07 ============ -->
+<h2 id="flows">07 · Touchpoint flows</h2>
+
+<h3>7.1 Sign-up / sign-in</h3>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as Browser
+  participant SB as Supabase Auth
+  participant API as FastAPI
+  participant DB as Postgres
+  B->>SB: signUp / signInWithPassword / signInWithOAuth(google)
+  SB-->>B: session {access_token (JWT), refresh_token}
+  B->>API: GET /api/me  (Authorization: Bearer JWT)
+  API->>API: verify HS256 with SUPABASE_JWT_SECRET; exp; aud="authenticated"
+  API->>DB: INSERT profiles ON CONFLICT DO NOTHING; if inserted → INSERT credit_ledger(+100,'signup_grant')
+  API-->>B: {user, credit_balance:100, preferences_count, campaigns_count}
+  B->>B: store session (Supabase SDK) → route to /dashboard
+</pre></div>
+<ul><li>Token refresh is handled by the Supabase SDK; <code>api.ts</code> re-reads the current token per request.</li><li>Sign-out clears the SDK session; the API is stateless so nothing else is needed.</li></ul>
+
+<h3>7.2 Wizard — Describe → Clarify → Generate → Review</h3>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as Browser (wizard)
+  participant API as FastAPI
+  participant O as Orchestrator
+  participant T as Tools
+  participant V as Validators
+  participant C as Credits
+  participant DB as Postgres
+  B->>API: POST /api/clarity {brief}
+  API->>T: score_clarity (free, cached)
+  T-->>B: {score, label, signals, questions[], parsed_brief}
+  alt score &lt; 60
+    B->>B: render question chips; user answers
+    B->>API: POST /api/clarity {brief, answers}
+    API-->>B: {score ≥ 60, resolved_summary}
+  end
+  B->>API: GET /api/credits/estimate?action=generate_campaign
+  API-->>B: {base:10, est_usage:2, balance:61}  → button "Generate · ~12 credits"
+  B->>API: POST /api/campaigns {brief, answers}  Accept: text/event-stream
+  API->>DB: create thread + interaction(kind='generate')
+  API->>C: reserve(10)
+  API->>O: run(mode=guided)
+  loop each plan step
+    O->>T: tool.run(ctx)
+    O-->>B: SSE stage {name, status:'done', ms}
+  end
+  O->>V: run_all(campaign)
+  opt failures
+    O->>T: repair tool (≤2)
+  end
+  O->>DB: INSERT campaigns + campaign_versions(v1) + validation_results
+  O->>C: settle(usage)
+  O-->>B: SSE done {campaign_id, credits_charged:12, balance:49}
+  B->>B: route to /campaigns/{id}
+</pre></div>
+
+<h3>7.3 Campaign page — edit, drop, regenerate, save config</h3>
+<div class="tscroll"><table>
+<tr><th>User action</th><th>Request</th><th>Tool</th><th>Credits</th><th>Validators re-run</th><th>UI behaviour</th></tr>
+<tr><td>Drop publisher</td><td><code>PATCH /api/campaigns/{id}</code> <code>{op:"drop_publisher", publisher_id}</code></td><td>drop_publisher</td><td>0</td><td>yes</td><td>Optimistic remove; allocation re-renders; toast with new split</td></tr>
+<tr><td>Edit creative text</td><td><code>{op:"update_creative", persona_id, headline, body, cta}</code></td><td>update_creative</td><td>0</td><td>yes (lengths, disinterest, preference)</td><td>Inline editor; length counters; validator warnings appear under the card</td></tr>
+<tr><td>Regenerate creative</td><td><code>POST /api/campaigns/{id}/creatives/{persona_id}/regenerate</code> <code>{instruction?}</code></td><td>regenerate_creative</td><td>2 + usage</td><td>yes</td><td>Cost preview on hover; card dims → new copy; "Undo" restores previous version</td></tr>
+<tr><td>Save config form</td><td><code>{op:"set_config", config}</code></td><td>set_budget + set_config</td><td>0</td><td>yes (alloc, budget)</td><td>Blocked client-side unless allocation = 100; server re-checks</td></tr>
+<tr><td>Mark ready</td><td><code>{op:"set_status", status:"ready"}</code></td><td>—</td><td>0</td><td>must have 0 errors</td><td>Button disabled with tooltip listing failing checks</td></tr>
+</table></div>
+<p>Every <code>PATCH</code> opens an interaction (kind=<code>edit</code>), bumps <code>version</code>, snapshots to <code>campaign_versions</code>, and returns <code>{campaign, validation, credits}</code> so the UI has one response shape for all edits.</p>
+
+<h3>7.4 Chat — free mode</h3>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant B as Browser (chat)
+  participant API as FastAPI
+  participant O as Orchestrator (free)
+  participant LLM as gpt-4.1
+  participant T as Tools
+  participant C as Credits
+  B->>API: POST /api/chat {thread_id?, campaign_id?, message}
+  API->>O: run(mode=free)
+  O->>LLM: messages + tool schemas + memory + campaign summary
+  LLM-->>O: tool_call drop_publisher{pub_001}
+  O->>T: drop_publisher (free) → validators → version++
+  O->>LLM: tool result
+  LLM-->>O: tool_call save_preference{banned_publishers += pub_001}   (message said "never")
+  O->>T: save_preference
+  O->>LLM: tool result
+  LLM-->>O: final text "Dropped Swiftcart and reallocated. Saved: never use Swiftcart."
+  O->>C: settle(usage of the planner call only → 'chat_llm_edit' base 1 if any LLM tool ran, else 0)
+  O-->>B: {reply, cards:[campaign_summary, memory_saved], credits:{charged:0, balance:49}}
+</pre></div>
+<ul>
+<li>The planner call itself is charged only when the turn used an LLM tool; a turn that only ran deterministic tools costs 0, so conversational edits stay cheap.</li>
+<li>Chat persists <code>chat_messages</code> per thread; opening the chat from a campaign page sets <code>campaign_id</code> so the agent has state.</li>
+<li>Cards are typed: <code>campaign_summary</code>, <code>creative</code>, <code>questions</code>, <code>validation</code>, <code>memory_saved</code>, <code>export_link</code>. The frontend has one renderer per card type.</li>
+</ul>
+
+<h3>7.5 Feedback — 👍 / 👎 + comment on any unit</h3>
+<div class="fig"><pre class="mermaid">
+flowchart TD
+  A[User clicks 👎 on Creative B<br/>comment: too clinical] --> B[POST /api/feedback<br/>target: creative persona_001]
+  B --> C[(feedback row<br/>interaction_id)]
+  C --> D{comment present?}
+  D -- no --> E[Store only<br/>show 'Thanks — noted']
+  D -- yes --> F[feedback.to_repair_action]
+  F --> G[regenerate_creative<br/>instruction = comment<br/>mode = repair · 1 credit + usage]
+  G --> H[validators → version++]
+  H --> I[Reply card: before / after<br/>Keep · Undo]
+  I --> J{comment matches<br/>always / never?}
+  J -- yes --> K[Offer: Save as preference?<br/>one-tap → save_preference]
+  J -- no --> L[Done]
+  style G fill:#F3EEFF,stroke:#7C3AED
+</pre></div>
+<div class="tscroll"><table>
+<tr><th>Target</th><th>Repair action</th><th>Instruction passed</th></tr>
+<tr><td>Publisher rank / reason</td><td><code>rank_publishers</code> with <code>focus=[publisher_id]</code></td><td>comment + "re-evaluate only this publisher; keep others fixed"</td></tr>
+<tr><td>Creative variant</td><td><code>regenerate_creative</code></td><td>comment</td></tr>
+<tr><td>Persona choice</td><td><code>pick_personas</code> with <code>exclude=[persona_id]</code></td><td>comment</td></tr>
+<tr><td>Config / bid rationale</td><td><code>build_config</code></td><td>comment</td></tr>
+<tr><td>Clarity interpretation</td><td><code>score_clarity</code> with comment as an extra answer</td><td>comment → regenerate is offered, not automatic</td></tr>
+</table></div>
+<p>👍 is stored too (no action) — it is the positive label for the eval set. Every feedback row shows on the campaign's <b>Activity</b> timeline with the version it produced.</p>
+
+<h3>7.6 Memory page</h3>
+<ul><li><code>GET /api/memory</code> → <code>{preferences[], facts[]}</code> each with <code>source</code> (<code>manual | chat | feedback</code>), <code>created_at</code>, and <code>origin_interaction_id</code>.</li><li>Form for typed preferences (brand voice textarea, banned publishers multi-select from catalog, default budget, default bid strategy); free-text facts list.</li><li><code>DELETE /api/memory/{kind}/{id}</code>; deletions take effect on the next interaction (memory is loaded per run).</li></ul>
+
+<h3>7.7 Credits page</h3>
+<ul><li><code>GET /api/credits</code> → <code>{balance, ledger[]}</code>; ledger rows: <code>created_at, reason, campaign_name, interaction_kind, base, usage_tokens, model_mix, delta, balance_after</code>.</li><li>Sparkline of daily spend; "Get more credits" → contact toast (billing hook is <code>POST /api/credits/grant</code>, admin-only, unused in demo).</li><li>Sidebar pill subscribes to the same query; every mutating response includes <code>credits</code> so the pill updates without polling.</li></ul>
+
+<h3>7.8 Export</h3>
+<div class="fig"><pre class="mermaid">
+sequenceDiagram
+  participant B as Browser
+  participant API as FastAPI
+  participant X as export_pdf.py
+  B->>API: GET /api/campaigns/{id}/export.pdf
+  API->>X: render(campaign, validation, user) → Jinja2 brief.html
+  X->>X: WeasyPrint HTML→PDF (≈300 ms)
+  X-->>B: application/pdf, Content-Disposition: attachment; filename=&lt;slug&gt;-brief-v&lt;n&gt;.pdf
+  B->>API: GET /api/campaigns/{id}/export.json
+  API-->>B: CampaignConfig schema v1 (same object the Config tab shows)
+</pre></div>
+<p>Export is free and idempotent; the PDF footer carries <code>campaign_id · version · generated_at</code> so a printed brief can be traced back to a version.</p>
+
+<h3>7.9 History & compare</h3>
+<ul><li><code>GET /api/campaigns?order=-created_at</code> lists with <code>clarity, top_publisher, budget, status, version, errors_count</code>.</li><li><code>GET /api/campaigns/{a}/compare/{b}?va=&amp;vb=</code> returns a computed diff: publisher score deltas, added/removed publishers, creative changes, config field diffs. Works across two campaigns or two versions of one.</li><li>Re-run = new campaign with <code>parent_campaign_id</code>; the compare page pre-selects parent vs child.</li></ul>
+
+<!-- ============ 08 ============ -->
+<h2 id="api">08 · API contract</h2>
+<div class="tscroll"><table>
+<tr><th>Endpoint</th><th>Body / params</th><th>Response</th><th>Errors</th></tr>
+<tr><td><code>GET /api/me</code></td><td>—</td><td>Profile + balance</td><td>401</td></tr>
+<tr><td><code>POST /api/clarity</code></td><td><code>{brief, answers?}</code></td><td>ClarityResult</td><td>422 brief empty</td></tr>
+<tr><td><code>POST /api/campaigns</code></td><td><code>{brief, answers?, parent_campaign_id?}</code>; <code>Accept: text/event-stream</code> optional</td><td>SSE stages then Campaign, or JSON Campaign</td><td>402 insufficient_credits · 409 clarity_too_low · 502 llm_unavailable</td></tr>
+<tr><td><code>GET /api/campaigns</code> · <code>/{id}</code> · <code>/{id}/versions</code></td><td>—</td><td>list / Campaign / versions[]</td><td>404 (also for other users' ids)</td></tr>
+<tr><td><code>PATCH /api/campaigns/{id}</code></td><td><code>{op, ...}</code> ops: drop_publisher · update_creative · set_config · set_status · restore_version</td><td><code>{campaign, validation[], credits}</code></td><td>409 invalid_state · 422 alloc_not_100</td></tr>
+<tr><td><code>POST /api/campaigns/{id}/creatives/{persona_id}/regenerate</code></td><td><code>{instruction?}</code></td><td>same shape</td><td>402</td></tr>
+<tr><td><code>GET /api/campaigns/{a}/compare/{b}</code></td><td><code>?va=&amp;vb=</code></td><td>Diff</td><td>404</td></tr>
+<tr><td><code>GET /api/campaigns/{id}/export.pdf|json</code></td><td>—</td><td>file</td><td>404</td></tr>
+<tr><td><code>POST /api/chat</code></td><td><code>{thread_id?, campaign_id?, message}</code></td><td><code>{thread_id, reply, cards[], credits}</code></td><td>402 · 429 tool_loop_limit</td></tr>
+<tr><td><code>GET /api/chat/{thread_id}</code></td><td>—</td><td>messages[]</td><td>404</td></tr>
+<tr><td><code>POST /api/feedback</code></td><td><code>{campaign_id, target:{kind,id}, vote, comment?}</code></td><td><code>{feedback_id, repair?: {campaign, validation, credits}}</code></td><td>402 if repair needed</td></tr>
+<tr><td><code>GET/POST/DELETE /api/memory…</code></td><td>preferences · facts</td><td>MemoryBlock</td><td>422</td></tr>
+<tr><td><code>GET /api/credits</code> · <code>/estimate</code></td><td><code>?action=</code></td><td>ledger / estimate</td><td>—</td></tr>
+<tr><td><code>GET /healthz</code></td><td>—</td><td><code>{ok, db, openai}</code></td><td>503</td></tr>
+</table></div>
+<p>All errors: <code>{error: {code, message, details?}}</code>. All mutating responses share <code>{campaign, validation, credits:{charged, balance}}</code>.</p>
+
+<!-- ============ 09 ============ -->
+<h2 id="data">09 · Data model</h2>
+<div class="fig"><pre class="mermaid">
+erDiagram
+  profiles ||--o{ campaigns : owns
+  profiles ||--o{ threads : owns
+  profiles ||--o{ credit_ledger : has
+  profiles ||--o{ preferences : has
+  profiles ||--o{ facts : has
+  campaigns ||--o{ campaign_versions : snapshots
+  campaigns ||--|| threads : "1:1"
+  threads ||--o{ interactions : contains
+  threads ||--o{ chat_messages : contains
+  interactions ||--o{ validation_results : produced
+  interactions ||--o{ credit_ledger : charged
+  interactions ||--o{ feedback : triggered_by
+  campaigns ||--o{ feedback : about
+  profiles { uuid id PK  text email  text display_name  int credit_balance  timestamptz created_at }
+  campaigns { uuid id PK  uuid user_id FK  uuid parent_campaign_id  text name  text brief  jsonb clarity  jsonb parsed_brief  jsonb publishers  jsonb excluded  jsonb personas  jsonb creatives  jsonb config  text status  int version  timestamptz created_at  timestamptz updated_at }
+  campaign_versions { uuid id PK  uuid campaign_id FK  int version  jsonb snapshot  uuid interaction_id  text change_note  timestamptz created_at }
+  threads { uuid id PK  uuid user_id FK  uuid campaign_id FK  timestamptz created_at }
+  interactions { uuid id PK  uuid thread_id FK  text kind  text mode  jsonb input  jsonb plan  jsonb usage  int credits_base  int credits_usage  text status  int duration_ms  timestamptz created_at }
+  validation_results { uuid id PK  uuid interaction_id FK  text check_id  text severity  bool passed  text message  jsonb target  text repair_tool }
+  feedback { uuid id PK  uuid user_id FK  uuid campaign_id FK  uuid interaction_id FK  text target_kind  text target_id  text vote  text comment  uuid repair_interaction_id  timestamptz created_at }
+  preferences { uuid id PK  uuid user_id FK  text key  jsonb value  text source  uuid origin_interaction_id  timestamptz updated_at }
+  facts { uuid id PK  uuid user_id FK  uuid campaign_id  text text  text source  uuid origin_interaction_id  timestamptz created_at }
+  credit_ledger { uuid id PK  uuid user_id FK  uuid interaction_id  int delta  text reason  jsonb usage  int balance_after  timestamptz created_at }
+  chat_messages { uuid id PK  uuid thread_id FK  text role  jsonb content  jsonb cards  uuid interaction_id  timestamptz created_at }
+</pre></div>
+<ul>
+<li><b>Indexes:</b> <code>campaigns(user_id, created_at desc)</code>, <code>interactions(thread_id, created_at)</code>, <code>credit_ledger(user_id, created_at desc)</code>, <code>preferences(user_id, key) unique</code>, <code>validation_results(interaction_id)</code>.</li>
+<li><b>RLS</b> on every table: <code>user_id = auth.uid()</code> (via join for child tables). FastAPI connects with the service role but sets <code>request.jwt.claims</code> per transaction so RLS still applies — a cheap second guard.</li>
+<li><b>Interactions are the audit spine.</b> Versions, validation results, credits, feedback and chat messages all hang off <code>interaction_id</code>, which is what makes the Activity timeline and the Credits ledger explainable.</li>
+</ul>
+
+<!-- ============ 10 ============ -->
+<h2 id="frontend">10 · Frontend internals</h2>
+<pre><code>frontend/
+  app/(auth)/login/page.tsx
+  app/(app)/layout.tsx                # AuthGuard + Sidebar (CreditPill) + Toaster
+  app/(app)/dashboard/page.tsx
+  app/(app)/new/page.tsx              # useWizard(): step machine; useSSE() for generation
+  app/(app)/campaigns/[id]/page.tsx   # tabs; useCampaign(id); ChecksPanel; ActivityTimeline
+  app/(app)/chat/page.tsx             # useThread(); CardRenderer by card.type
+  app/(app)/history/page.tsx  · compare/page.tsx  · memory/page.tsx  · credits/page.tsx
+  components/ui/*                     # shadcn
+  components/campaign/{PublisherCard,CreativeCard,ConfigForm,BudgetDonut,ClarityMeter,ChecksPanel,FeedbackButtons}.tsx
+  components/chat/{MessageList,Composer,cards/*}.tsx
+  components/credits/{CreditPill,CostPreview,LedgerTable}.tsx
+  lib/api.ts        # fetch wrapper: bearer token, error envelope → typed ApiError, SSE helper
+  lib/queries.ts    # TanStack Query keys + hooks; every mutation applies `credits` to the 'me' cache
+  lib/types.ts      # generated from /openapi.json (openapi-typescript) — no hand-written API types
+  lib/store.ts      # zustand: ui state only (theme, wizard draft, chat draft)
+</code></pre>
+<h4>Key client behaviours</h4>
+<ul>
+<li><b>One mutation hook</b> (<code>useCampaignMutation</code>) wraps every PATCH/regenerate/feedback call: optimistic update where safe (drop, text edit), rollback on error, and writes <code>validation</code> + <code>credits</code> from the response into the caches.</li>
+<li><b>CostPreview</b> renders "~12 credits · 49 left" next to any paid button; disabled state with reason when <code>balance &lt; base</code>.</li>
+<li><b>ChecksPanel</b> groups validation results by severity, links each to its target card (scrolls + highlights), and shows "Fix with AI (1 credit)" that posts feedback with the check message as the comment.</li>
+<li><b>FeedbackButtons</b> are on PublisherCard, CreativeCard, ConfigForm and the clarity summary; 👎 opens a 1-line comment popover; result card shows before/after with Undo (calls <code>restore_version</code>).</li>
+<li><b>SSE</b> for generation: stage list is driven by server events; a dropped connection falls back to polling <code>GET /api/campaigns/{id}</code> until <code>status != generating</code>.</li>
+</ul>
+
+<!-- ============ 11 ============ -->
+<h2 id="errors">11 · Errors, limits, observability</h2>
+<div class="tscroll"><table>
+<tr><th>Situation</th><th>Backend behaviour</th><th>User sees</th></tr>
+<tr><td>OpenAI timeout / 5xx</td><td>Retry ×2 with backoff (0.8 s, 2 s); then <code>502 llm_unavailable</code>; reservation refunded</td><td>"The model is busy — nothing was charged. Try again."</td></tr>
+<tr><td>LLM returns invalid JSON / schema</td><td>One re-ask with the validation error; then fail the tool</td><td>Same as above, with the failing step named</td></tr>
+<tr><td>Insufficient credits</td><td><code>402</code> before any LLM call</td><td>Button disabled with balance; Credits page link</td></tr>
+<tr><td>Clarity &lt; 60 posted to generate</td><td><code>409 clarity_too_low</code> with questions</td><td>Wizard jumps back to Clarify</td></tr>
+<tr><td>Chat tool loop &gt; 6 calls</td><td>Stop; reply with what was done; <code>429</code> flag in response</td><td>"I stopped after 6 steps — here's where we are."</td></tr>
+<tr><td>Rate limit</td><td>10 generate/min/user, 60 chat/min/user (in-memory token bucket; Redis at scale)</td><td>Toast with retry-after</td></tr>
+<tr><td>Off-topic brief (B2B SaaS)</td><td>Clarity passes but <code>min_publishers</code> warns; ranking explains weak fit honestly</td><td>Banner: "This catalog is consumer-commerce; fits are weak. Here's the best we can do."</td></tr>
+</table></div>
+<p><b>Observability:</b> structured logs per interaction (<code>interaction_id, kind, mode, tools[], usage, credits, duration_ms, validation_summary</code>); <code>/healthz</code> checks DB and a cheap OpenAI models call; prompt files carry <code>version</code> which is stored on the interaction so a ranking can be traced to the prompt that produced it.</p>
+
+<!-- ============ 12 ============ -->
+<h2 id="tests">12 · Testing strategy</h2>
+<div class="cards">
+  <div class="card"><span class="k">Unit · no network</span><h4>scoring.py</h4><p>Golden cases: dog food → Pawline &gt; Ruffco &gt; Tailcrate; activewear → Movewell first; Velvetline never top-5 for pet. AOV distance and adjacency table edge cases.</p></div>
+  <div class="card"><span class="k">Unit · no network</span><h4>validators/*</h4><p>Each check with a passing and failing fixture; repair_tool mapping.</p></div>
+  <div class="card"><span class="k">Unit · no network</span><h4>billing</h4><p>tokens_to_credits weights; reserve/settle/refund ledger invariants (SUM = balance) with a Postgres test container.</p></div>
+  <div class="card"><span class="k">Integration · recorded LLM</span><h4>pipeline</h4><p>VCR-style fixtures for the 15 example briefs; asserts schema validity, ≥3 publishers, creatives per persona, config sums to 100.</p></div>
+  <div class="card"><span class="k">Integration</span><h4>orchestrator free mode</h4><p>Scripted tool-call sequences: "drop X" → drop_publisher; "never use X" → drop + save_preference; loop limit.</p></div>
+  <div class="card"><span class="k">E2E · Playwright</span><h4>happy path</h4><p>Sign up → generate dog-food campaign → 👎 creative B → undo → export PDF → compare with re-run. Runs against Shape A container in CI.</p></div>
+</div>
+</div>
