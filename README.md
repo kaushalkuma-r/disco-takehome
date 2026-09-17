@@ -2,7 +2,7 @@
 
 An advertiser describes their business in a sentence. Campaign Studio returns **where to run** (ranked publishers with reasons *and* exclusions), **who to speak to** (persona-tuned creative), and **how to run it** (a structured, editable campaign config) — with every decision explained, every model call metered in credits, and feedback that repairs the output in place.
 
-Live demo: https://campaign-studio-a1dk.onrender.com (Render free tier; first load after idle takes ~1 min) · Prototype: https://claude.ai/artifact/BZcMjBq8WvNTHcMq9Dgsuy · Design docs: [`docs/design/`](docs/design/) · Prompts: [`prompts/`](prompts/)
+Live demo: https://campaign-studio-a1dk.onrender.com (Render free tier; first load after idle takes ~1 min) · demo login `demo@disconetwork.com` / `disco-demo-2026` · **[How to use it](docs/USER_GUIDE.md)** · Prototype: https://claude.ai/artifact/BZcMjBq8WvNTHcMq9Dgsuy · Design docs: [`docs/design/`](docs/design/) · Prompts: [`prompts/`](prompts/)
 
 ## What I built
 
@@ -56,6 +56,6 @@ Next steps in order: (1) co-locate API and DB (264 → ~2 ms turns 10 req/s into
 ```
 backend/   FastAPI · app/agent (orchestrator, registry, tools, validators, memory, chat) · billing · services · routers · migrations · tests
 frontend/  Next.js 15 static export · app/{login,dashboard,new,campaign,chat,history,compare,memory,credits} · lib (api, session, ui)
-prompts/   every prompt, versioned frontmatter          data/  the mock data pack          docs/design/  HLD · LLD (Mermaid) + rendered HTML
+prompts/   every prompt, versioned frontmatter          data/  the mock data pack          docs/  USER_GUIDE · design/ (HLD · LLD, Mermaid + HTML)
 design/    clickable prototype + screenshot reviews     tools/ reviewer, browser E2E, audit, load test
 ```
