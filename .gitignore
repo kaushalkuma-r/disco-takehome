@@ -9,3 +9,5 @@ frontend/out/
 frontend/.next/
 design/prototype/_*.html
 disco-takehome-candidate/
+design/review-app/audit/
+design/review-app/docker/

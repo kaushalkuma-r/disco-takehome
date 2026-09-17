@@ -1,0 +1,36 @@
+# Render Blueprint — Shape A (single free web service). Set the secret env vars in the dashboard after the first deploy.
+services:
+  - type: web
+    name: campaign-studio
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: ""
+      - key: SERVE_STATIC
+        value: "1"
+      - key: MODEL_FAST
+        value: gpt-4.1-mini
+      - key: MODEL_STRONG
+        value: gpt-4.1
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        value: https://us.cloud.langfuse.com
+      - key: LANGFUSE_ENVIRONMENT
+        value: production
