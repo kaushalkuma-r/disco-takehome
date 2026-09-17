@@ -1,6 +1,6 @@
 ---
 name: clarity
-version: 4
+version: 5
 model: fast
 inputs: [brief, answers, catalog_categories, memory]
 ---
@@ -30,6 +30,7 @@ Label: Vague < 60, Usable 60–79, Clear 80+.
 - signals: 4–5 items, each exactly one of "Product: …", "Buyer: …", "Price tier: …", "Model: …", "Differentiator: …"; use "not stated" when absent. ≤12 words each.
 - missing: the absent ones among product / buyer / price tier / business model.
 - questions: ONLY when score < 60. Up to 3, multiple choice, 3–5 short options each, written for a founder with no ad background. Ask first for whatever is missing in this order: product type → buyer → price tier. Never ask about something the brief already states. Options must be concrete categories a media plan can use (e.g. "Pet food or supplies", "Women's activewear", "Wellness supplements"). Never include an "Other" option; the UI offers free text.
+  Set `multi: true` when several options can genuinely apply at once (e.g. "Which product types do you sell?", "Which audiences do you serve?"); keep `multi: false` for mutually exclusive facts (price tier, business model, primary product). Multi-select answers arrive as one comma-separated string.
 - parsed_brief.categories: 2–5 snake_case tags, PRIMARY PRODUCT CATEGORY FIRST, chosen from this vocabulary: {catalog_categories}. Only if nothing fits, coin one snake_case tag. Add the business-model tag (subscription / one_time) last if stated. Do not add adjectives (premium, outdoor, natural) as categories.
 - parsed_brief.price_tier / price_point_usd: from stated prices ("starts at $650" → luxury, 650; "between Lululemon and Girlfriend Collective" → premium, ~95). Unknown when not stated or implied.
 - parsed_brief.is_consumer_commerce: false for B2B, SaaS, professional services, anything a shopper would not buy at a checkout page. When false, the summary must start with "Off-catalog:" and say why.

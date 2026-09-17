@@ -369,3 +369,18 @@ tr:last-child td { border-bottom: none; }
 .spark i { flex: 1; background: var(--purple-100); border-radius: 3px 3px 0 0; min-width: 6px; position: relative; }
 .spark i.on { background: var(--purple); }
 .ledger td.neg { color: var(--bad); font-weight: 600; } .ledger td.pos { color: var(--good); font-weight: 600; }
+
+/* ---------- chat yield progress (live tool tree) ---------- */
+.yields { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 13px; }
+.yrow { display: flex; align-items: center; gap: 8px; min-height: 22px; color: var(--ink-2); }
+.yrow.thought { color: var(--muted); font-style: italic; }
+.yrow.thought .typing { padding: 0; }
+.yrow.text { color: var(--ink-2); }
+.yrow.sub { padding-left: 24px; font-size: 12.5px; color: var(--muted); }
+.yrow.sub.completed { color: var(--ink-2); }
+.yic { width: 16px; height: 16px; border-radius: 999px; display: inline-grid; place-items: center; flex: none; border: 2px solid var(--line); }
+.ycard.running > .yrow > .yic, .yrow.sub.running .yic { border-color: var(--purple); border-top-color: transparent; animation: spin .8s linear infinite; }
+.ycard.completed > .yrow > .yic, .yrow.sub.completed .yic { background: var(--good); border-color: var(--good); color: #fff; }
+.ycard.failed > .yrow > .yic { background: var(--bad); border-color: var(--bad); color: #fff; }
+.ycard { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--bg-2); }
+.ycard.running { border-color: var(--purple); }

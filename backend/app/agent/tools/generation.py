@@ -59,7 +59,7 @@ class ScoreClarity(Tool[ClarityIn, ClarityResult]):
             for q in out.questions[:3]:
                 opts = [o for o in q.opts if o.strip().lower() not in ("other", "other (please specify)", "something else")][:5]
                 if len(opts) >= 2:
-                    questions.append(ClarityQuestion(q=q.q, opts=opts))
+                    questions.append(ClarityQuestion(q=q.q, opts=opts, multi=bool(q.multi)))
         await ctx.stage("Parsing brief", "done", f"clarity {score}", int((time.perf_counter() - t0) * 1000))
         return ClarityResult(score=score, label=label, summary=out.summary, signals=out.signals[:5], missing=out.missing, questions=questions,
                              parsed_brief=out.parsed_brief, answers=inp.answers)
@@ -172,9 +172,11 @@ class RankPublishers(Tool[RankIn, RankResult]):
         # A plan needs ≥3 placements to produce signal: top up from the next-best candidates (≥40) as capped reach tests,
         # and never return nothing even for an off-category brief.
         if len(recommended) < 3:
+            # Candidates ≥40 first; then, so a plan always has 3 placements, the best remaining pre-scored publishers as honest weak fits.
             pool = sorted((e for e in excluded if e.id not in banned and e.score >= EXCLUDE_BELOW), key=lambda e: -e.score)
-            if not recommended and not pool:
-                pool = [ExcludedPublisher(id=s.id, score=s.score, why="Weak fit: this catalog is consumer commerce and nothing matches well; kept as the least-bad reach option.") for s in top[:2]]
+            used = {p.id for p in recommended} | {e.id for e in pool}
+            pool += [ExcludedPublisher(id=s.id, score=s.score, why="Weak fit: nothing in this consumer-commerce catalog matches well; kept as the least-bad reach option.")
+                     for s in pre if s.id not in used and s.id not in banned]
             for e in pool:
                 if len(recommended) >= 3:
                     break

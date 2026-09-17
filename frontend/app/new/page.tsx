@@ -37,7 +37,8 @@ export default function NewCampaign() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [text, setText] = useState("");
   const [clar, setClar] = useState<ClarityResult | null>(null);
-  const [answers, setAnswers] = useState<(string | null)[]>([]);
+  const [answers, setAnswers] = useState<(string | null)[]>([]);      // final answer per question (chips joined, or free text)
+  const [picked, setPicked] = useState<string[][]>([]);               // selected chips per question (multi-select aware)
   const [free, setFree] = useState<string[]>([]);
   const [checking, setChecking] = useState(false);
   const [stages, setStages] = useState<Record<string, StageEvent>>({});
@@ -62,6 +63,7 @@ export default function NewCampaign() {
       const r = await api.clarity(t, ans);
       setClar(r);
       setAnswers(new Array(r.questions.length).fill(null));
+      setPicked(r.questions.map(() => []));
       setFree(new Array(r.questions.length).fill(""));
       setStep(2);
     } catch (e) {
@@ -93,7 +95,7 @@ export default function NewCampaign() {
       const err = e instanceof ApiError ? e : null;
       if (err?.code === "clarity_too_low" && err.payload) {
         const r = err.payload as ClarityResult;
-        setClar(r); setAnswers(new Array(r.questions.length).fill(null)); setFree(new Array(r.questions.length).fill("")); setStep(2);
+        setClar(r); setAnswers(new Array(r.questions.length).fill(null)); setPicked(r.questions.map(() => [])); setFree(new Array(r.questions.length).fill("")); setStep(2);
         toast("The brief still needs more detail — please answer the questions.", "info"); return;
       }
       toast(err?.code === "insufficient_credits" ? "Not enough credits to generate." : `Generation failed — nothing was charged. ${err?.message || ""}`, "warn");
@@ -139,12 +141,18 @@ export default function NewCampaign() {
               <div className="stack">
                 {clar.questions.map((q, i) => (
                   <div className="q" key={q.q} style={answers[i] ? { borderColor: "var(--good)" } : undefined}>
-                    <div className="qt row between"><span>{i + 1}. {q.q}</span>{answers[i] ? <Pill tone="good"><Icon name="check" /> answered</Pill> : <Pill tone="warn">required</Pill>}</div>
+                    <div className="qt row between"><span>{i + 1}. {q.q} {q.multi && <span className="help" style={{ fontWeight: 500 }}>(choose all that apply)</span>}</span>{answers[i] ? <Pill tone="good"><Icon name="check" /> answered</Pill> : <Pill tone="warn">required</Pill>}</div>
                     <div className="opts">
-                      {q.opts.map((o) => <button type="button" key={o} className={`chip ${answers[i] === o ? "on" : ""}`} onClick={() => { setAnswers((a) => a.map((x, j) => (j === i ? o : x))); setFree((f) => f.map((x, j) => (j === i ? "" : x))); }}>{o}</button>)}
+                      {q.opts.map((o) => <button type="button" key={o} className={`chip ${(picked[i] || []).includes(o) ? "on" : ""}`} onClick={() => {
+                        const cur = picked[i] || [];
+                        const next = q.multi ? (cur.includes(o) ? cur.filter((v) => v !== o) : [...cur, o]) : [o];
+                        setPicked((p) => p.map((x, j) => (j === i ? next : x)));
+                        setAnswers((a) => a.map((x, j) => (j === i ? (next.length ? next.join(", ") : null) : x)));
+                        setFree((f) => f.map((x, j) => (j === i ? "" : x)));
+                      }}>{o}</button>)}
                       <label className="sr-only" htmlFor={`free${i}`}>Other answer</label>
                       <input className="input" id={`free${i}`} style={{ height: 32, maxWidth: 220 }} placeholder="Or type your own…" value={free[i] || ""}
-                        onChange={(e) => { const v = e.target.value; setFree((f) => f.map((x, j) => (j === i ? v : x))); setAnswers((a) => a.map((x, j) => (j === i ? (v.trim() || null) : x))); }} />
+                        onChange={(e) => { const v = e.target.value; setFree((f) => f.map((x, j) => (j === i ? v : x))); setPicked((p) => p.map((x, j) => (j === i ? [] : x))); setAnswers((a) => a.map((x, j) => (j === i ? (v.trim() || null) : x))); }} />
                     </div>
                   </div>
                 ))}

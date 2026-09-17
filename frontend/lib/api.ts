@@ -2,7 +2,7 @@
 import { accessToken } from "./supabase";
 import type {
   ActivityRow, Campaign, CampaignListItem, Catalog, ChatMessage, ChatTurn, ClarityResult, CompareResult, CreditsPage, FeedbackRow, Me, Memory,
-  MutationResponse, StageEvent,
+  MutationResponse, StageEvent, YieldEvent,
 } from "./types";
 
 /** Empty NEXT_PUBLIC_API_URL = same origin (Shape A). */
@@ -73,47 +73,57 @@ export const api = {
   },
 
   /** Streaming generation: yields stage events, resolves with the final MutationResponse. */
-  async generate(body: { brief: string; answers: string[]; parent_campaign_id?: string | null }, onStage: (e: StageEvent) => void): Promise<MutationResponse> {
-    const token = await accessToken();
-    const res = await fetch(`${API_BASE}/api/campaigns`, {
-      method: "POST", body: JSON.stringify(body),
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    });
-    if (!res.ok || !res.body) {
-      const j = await res.json().catch(() => ({}));
-      const e = j.error || j.detail || {};
-      throw new ApiError(res.status, e.code || "http_error", e.message || res.statusText, e.payload);
-    }
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = "";
-    let event = "message";
-    let done: MutationResponse | null = null;
-    let error: ApiError | null = null;
-    const handle = (name: string, data: string) => {
-      if (!data) return;
-      if (name === "stage") onStage(JSON.parse(data));
-      else if (name === "done") done = JSON.parse(data);
-      else if (name === "error") { const e = JSON.parse(data); error = new ApiError(e.status || 500, e.code, e.message, e.payload); }
-    };
-    for (;;) {
-      const { value, done: eof } = await reader.read();
-      if (eof) break;
-      buf += dec.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-      let idx: number;
-      while ((idx = buf.indexOf("\n\n")) >= 0) {
-        const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
-        let data = "";
-        for (const line of chunk.split("\n")) {
-          if (line.startsWith("event:")) event = line.slice(6).trim();
-          else if (line.startsWith("data:")) data += line.slice(5).trim();
-        }
-        handle(event, data);
-        event = "message";
-      }
-    }
-    if (error) throw error;
-    if (!done) throw new ApiError(500, "stream_ended", "The stream ended without a result.");
-    return done;
+  generate(body: { brief: string; answers: string[]; parent_campaign_id?: string | null }, onStage: (e: StageEvent) => void): Promise<MutationResponse> {
+    return sse<MutationResponse>("/api/campaigns", body, { stage: onStage });
+  },
+
+  /** Streaming chat turn: yields live progress events, resolves with the ChatTurn. */
+  chatStream(body: { message: string; thread_id?: string | null; campaign_id?: string | null }, onYield: (e: YieldEvent) => void): Promise<ChatTurn> {
+    return sse<ChatTurn>("/api/chat", body, { yield: onYield });
   },
 };
+
+/** POST + parse an SSE response. Named events are routed to `handlers`; `done` resolves, `error` rejects. */
+async function sse<T>(path: string, body: unknown, handlers: Record<string, (data: never) => void>): Promise<T> {
+  const token = await accessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST", body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", Accept: "text/event-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!res.ok || !res.body) {
+    const j = await res.json().catch(() => ({}));
+    const e = j.error || j.detail || {};
+    throw new ApiError(res.status, e.code || "http_error", e.message || res.statusText, e.payload);
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let event = "message";
+  let done: T | null = null;
+  let error: ApiError | null = null;
+  const handle = (name: string, data: string) => {
+    if (!data) return;
+    if (name === "done") done = JSON.parse(data);
+    else if (name === "error") { const e = JSON.parse(data); error = new ApiError(e.status || 500, e.code, e.message, e.payload); }
+    else handlers[name]?.(JSON.parse(data) as never);
+  };
+  for (;;) {
+    const { value, done: eof } = await reader.read();
+    if (eof) break;
+    buf += dec.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+    let idx: number;
+    while ((idx = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
+      let data = "";
+      for (const line of chunk.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) data += line.slice(5).trim();
+      }
+      handle(event, data);
+      event = "message";
+    }
+  }
+  if (error) throw error;
+  if (!done) throw new ApiError(500, "stream_ended", "The stream ended without a result.");
+  return done;
+}

@@ -59,7 +59,11 @@ def main() -> int:
             page.goto(f"{a.web}/login/")
             page.wait_for_selector("#email")
             shot(page, out, "01-login")
-            page.click("a:has-text('Create an account')")
+            for _ in range(10):  # dev server may still be hydrating; retry the mode switch until the name field appears
+                page.click("a:has-text('Create an account')")
+                if page.locator("#name").count():
+                    break
+                page.wait_for_timeout(500)
             page.fill("#name", "E2E Reviewer")
             page.fill("#email", email)
             page.fill("#pw", "disco-demo-123")
@@ -152,8 +156,18 @@ def main() -> int:
             check(True, "chat saved a preference")
             page.fill("#ci", "Why does the top publisher rank first?")
             page.press("#ci", "Enter")
+            # live yields: a tool card must appear while the turn is in flight, before the reply lands
+            page.wait_for_selector(".msg.ai .ycard, .msg.ai .yrow.thought", timeout=30000)
+            check(True, "live yield rows render while the turn runs (no bare three dots)")
             page.wait_for_function("document.querySelectorAll('.msg.ai').length >= 2 && !document.querySelector('.msg.ai .typing')", timeout=60000)
-            check("rank" in page.locator(".msg.ai").last.inner_text().lower() or len(page.locator(".msg.ai").last.inner_text()) > 40, "chat answered the explain question")
+            last = page.locator(".msg.ai").last
+            check(len(last.inner_text()) > 40 and "i can explain" not in last.inner_text().lower(), "chat actually explained the ranking")
+            check(last.locator(".ycard.completed").count() >= 1, "completed tool card kept in the finished message")
+            page.fill("#ci", "Why did our sales drop last quarter?")
+            page.press("#ci", "Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.ai').length >= 3 && !document.querySelector('.msg.ai .typing')", timeout=60000)
+            t = page.locator(".msg.ai").last.inner_text().lower().replace("\u2019", "'")
+            check(any(w in t for w in ("can't", "cannot", "outside", "not able", "only")) and "free" in t, "out-of-scope question declined, free")
             shot(page, out, "11-chat")
 
             # ---- memory page reflects it

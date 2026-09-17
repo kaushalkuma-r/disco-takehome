@@ -248,21 +248,45 @@ class SavePreference(Tool[SavePrefIn, CampaignOut]):
     Input, Output = SavePrefIn, CampaignOut
 
     async def run(self, ctx: AgentCtx, inp: SavePrefIn) -> CampaignOut:
-        if inp.key not in {"brand_voice", "banned_publishers", "banned_words", "default_daily_budget", "bid_strategy_default"}:
-            return CampaignOut(ok=False, note="unknown preference key")
-        if inp.key in ("banned_publishers", "banned_words"):
-            items = inp.value if isinstance(inp.value, list) else [str(inp.value)]
-            if inp.key == "banned_publishers":
-                names = {p.name.lower(): p.id for p in ctx.catalog.publishers}
-                items = [names.get(str(i).lower(), i) for i in items]
-                items = [i for i in items if ctx.catalog.has_publisher(i)]
-            merged = await repo.merge_list_preference(ctx.conn, ctx.user.id, inp.key, items, "chat", ctx.interaction_id)
-            ctx.memory.preferences[inp.key] = merged
-        else:
-            val = int(inp.value) if inp.key == "default_daily_budget" else str(inp.value)
-            await repo.set_preference(ctx.conn, ctx.user.id, inp.key, val, "chat", ctx.interaction_id)
-            ctx.memory.preferences[inp.key] = val
-        return CampaignOut(note=f"Saved preference {inp.key}")
+        key = inp.key.strip().lower().replace(" ", "_")
+        aliases = {"banned_publisher": "banned_publishers", "ban_publishers": "banned_publishers", "excluded_publishers": "banned_publishers",
+                   "never_use_publishers": "banned_publishers", "banned_word": "banned_words", "voice": "brand_voice", "tone": "brand_voice",
+                   "daily_budget": "default_daily_budget", "bid_strategy": "bid_strategy_default"}
+        key = aliases.get(key, key)
+        if key not in {"brand_voice", "banned_publishers", "banned_words", "default_daily_budget", "bid_strategy_default"}:
+            return CampaignOut(ok=False, note=f"unknown preference key {inp.key}; use brand_voice, banned_publishers, banned_words, default_daily_budget or bid_strategy_default")
+        if key in ("banned_publishers", "banned_words"):
+            raw = inp.value if isinstance(inp.value, list) else [v.strip() for v in str(inp.value).replace(";", ",").split(",")]
+            items = [str(i).strip() for i in raw if str(i).strip()]
+            if key == "banned_publishers":
+                items = [_resolve_publisher(ctx, i) for i in items]
+                items = [i for i in items if i]
+                if not items:
+                    return CampaignOut(ok=False, note="no publisher in the catalog matched; use a catalog name or id like pub_001")
+            merged = await repo.merge_list_preference(ctx.conn, ctx.user.id, key, items, "chat", ctx.interaction_id)
+            ctx.memory.preferences[key] = merged
+            names = [ctx.catalog.publisher(i).name for i in items] if key == "banned_publishers" else items
+            return CampaignOut(note=f"Saved: never use {', '.join(names)}" if key == "banned_publishers" else f"Saved banned words: {', '.join(items)}")
+        val = int(str(inp.value).replace("$", "").replace(",", "")) if key == "default_daily_budget" else str(inp.value)
+        await repo.set_preference(ctx.conn, ctx.user.id, key, val, "chat", ctx.interaction_id)
+        ctx.memory.preferences[key] = val
+        return CampaignOut(note=f"Saved preference {key}")
+
+
+def _resolve_publisher(ctx: AgentCtx, text: str) -> str | None:
+    """Accept an id (pub_001), an exact name, or the first word of a name (case-insensitive)."""
+    t = text.strip().lower()
+    if ctx.catalog.has_publisher(t):
+        return t
+    for p in ctx.catalog.publishers:
+        n = p.name.lower()
+        if t == n or t == n.split()[0] or t.replace("&", "and") == n.replace("&", "and"):
+            return p.id
+    for p in ctx.catalog.publishers:
+        if n := p.name.lower():
+            if n.split()[0] in t or t in n:
+                return p.id
+    return None
 
 
 class FactIn(BaseModel):

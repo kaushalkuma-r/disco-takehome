@@ -6,12 +6,12 @@ Live demo: https://campaign-studio-a1dk.onrender.com (Render free tier; first lo
 
 ## What I built
 
-- **Clarity gate (free).** Every brief is scored 0–100 first. Below 60 the user answers ≤3 multiple-choice questions before any credits are spent, so *"We help people feel better"* becomes *"wellness supplements, general consumers, budget"* instead of a confident wrong plan.
+- **Clarity gate (free).** Every brief is scored 0–100 first. Below 60 the user answers ≤3 questions (single- or multi-select, the model decides) before any credits are spent, so *"We help people feel better"* becomes *"wellness supplements, general consumers, budget"* instead of a confident wrong plan.
 - **Hybrid ranking.** A deterministic pre-score (category 35 · persona 30 · AOV 15 · audience 20, unit-tested against golden briefs) plus a model adjustment bounded to ±15 that must cite the publisher's catalog note. Exclusions carry reasons. Weak briefs still get three capped "reach test" placements.
 - **Persona-tuned creative.** 3–5 variants written to each persona's messaging preferences and away from its disinterests; fit score and "why this persona" are shown; regenerate one variant with an instruction.
 - **Campaign config.** Objective, KPI, bid strategy + ranges with a written rationale, budget/flight, targeting, per-publisher allocation (fit × log reach, capped at 45%), creative↔placement links. Editable form with live JSON; exported as JSON or a one-page PDF brief.
 - **Agentic core.** One orchestrator (guided / free / repair modes) calls typed tools, runs **11 validators** after every change, repairs failures once during generation, versions every change, and settles credits from real token usage. The wizard, the chat and the 👍/👎 buttons are three doors into the same tools.
-- **Streaming.** Generation streams stage events over SSE (parse → rank → personas → creative → config → checks) so the UI shows what is happening, including auto-repairs, as they occur.
+- **Streaming.** Generation streams stage events over SSE; chat streams **yield events** (`thought` → `tool_card` running/completed → nested `tool_event` rows → `turn_end`, folded by id — a surface-level version of Sentinel's yield-events) so the user sees what the agent is doing instead of a spinner.
 - **Feedback that acts.** 👎 + comment on a publisher, creative, persona or config re-runs only that tool. **Memory** (brand voice, banned publishers/words, default budget, facts) is set explicitly or from chat ("never use Swiftcart") and enforced by checks. **Credits**: 100 on signup, base fee + 1 credit per 4k weighted tokens (gpt-4.1 = 2×), deterministic edits free, ledger sum = balance always.
 - **Login** (Supabase Auth; ES256 JWTs verified against the project JWKS), history + compare across runs, activity timeline, dark mode, mobile.
 - **Observability.** Every interaction is a Langfuse trace shaped like the agent: an `agent` root (user + thread as session), a `tool` span per tool call, a `generation` per model call with prompt name/version, tokens and cost, and a `guardrail` span for the validator/repair pass. Set `LANGFUSE_*` in `.env`; without keys tracing is a no-op.
@@ -27,7 +27,7 @@ Supabase: free project → Authentication → Providers → Email → turn **off
 
 **Single container (what the demo runs):** `docker build --build-arg NEXT_PUBLIC_SUPABASE_URL=… --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=… -t campaign-studio . && docker run --env-file .env -e SERVE_STATIC=1 -p 8000:8000 campaign-studio` — FastAPI serves the Next.js static export and `/api/*` from one 85 MB image.
 
-**Tests:** `backend/.venv/bin/pytest` (unit: scoring golden cases, validators, pricing, memory) · `backend/tests/e2e_api.py` (every endpoint, live Supabase + OpenAI) · `tools/e2e_browser.py` (Playwright through the real UI, also run against the container) · `tools/audit_app.py` (contrast/layout/touch-target audit, light+dark, desktop+mobile) · `tools/load_test.py`.
+**Tests:** `backend/.venv/bin/pytest` (unit: scoring golden cases, validators, pricing, memory) · `backend/tests/e2e_api.py` (every endpoint) · `backend/tests/e2e_chat.py` (streamed yields, clarification → generation in-thread, in-scope explain, out-of-scope refusal, edits, memory, history) · `tools/e2e_browser.py` (Playwright through the real UI, also run against the container) · `tools/audit_app.py` (contrast/layout/touch-target audit, light+dark, desktop+mobile) · `tools/load_test.py`.
 
 ## Deploy free (verified Sept 2026)
 

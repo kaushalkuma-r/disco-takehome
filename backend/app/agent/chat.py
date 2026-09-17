@@ -18,7 +18,7 @@ from ..config import get_settings
 from ..llm.client import LLMUnavailable, client, resolve_model
 from ..llm.usage import CallUsage, Usage
 from ..schemas.domain import Campaign, MutationResponse
-from . import orchestrator, prompts, registry, summarize, validators
+from . import events, orchestrator, prompts, registry, summarize, validators
 from .memory import MemoryBlock, extract_candidates
 from .registry import AgentCtx, UserCtx
 
@@ -68,14 +68,19 @@ async def turn(conn, user: UserCtx, catalog: Catalog, *, thread_id: UUID | None,
     plan: list[dict] = []
     mutated = False
     llm_tool_ran = False
+    nested_charged = 0  # credits charged by tools that bill themselves (generate_campaign)
     reply = ""
     model = resolve_model("strong")
     root_cm = obs.agent("agent.chat_turn", user_id=str(user.id), session_id=str(thread_id), tags=["free", "chat"], input={"message": message},
                         metadata={"interaction_id": str(it.id), "campaign_id": str(campaign.id) if campaign else None, "prompt_version": prompts.load("chat_system").version})
     root = root_cm.__enter__()
+    em = events.current()
+    await em.thought("Reading your campaign and memory" if campaign else "Reading your message")
     try:
         for step in range(s.chat_max_tool_calls + 1):
             t0 = time.perf_counter()
+            if step:
+                await em.thought("Deciding what to do next")
             with obs.generation("llm.chat_planner", model=model, input=messages[-6:], metadata={"step": step, "tools": len(tool_schemas())}, model_parameters={"temperature": 0.3}) as gen:
                 resp = await client().chat.completions.create(model=model, messages=messages, tools=tool_schemas(), tool_choice="auto", temperature=0.3)
                 u = resp.usage
@@ -94,8 +99,15 @@ async def turn(conn, user: UserCtx, catalog: Catalog, *, thread_id: UUID | None,
                     args = json.loads(tc.function.arguments or "{}")
                 except json.JSONDecodeError:
                     args = {}
-                result, card = await _dispatch(conn, ctx, name, args)
-                plan.append({"tool": name, "args": args})
+                card_id = await em.tool_start(name, _args_detail(name, args))
+                try:
+                    result, card = await _dispatch(conn, ctx, name, args, card_id)
+                except Exception as e:  # noqa: BLE001
+                    await em.tool_end(card_id, name, False, str(e)[:160])
+                    raise
+                await em.tool_end(card_id, name, "error" not in result, _result_detail(name, result))
+                nested_charged += int(result.get("credits_charged") or 0)
+                plan.append({"tool": name, "args": args, "ok": "error" not in result and result.get("ok", True) is not False})
                 if card:
                     cards.append(card)
                 if name in LLM_TOOLS and name != "generate_campaign":
@@ -114,8 +126,9 @@ async def turn(conn, user: UserCtx, catalog: Catalog, *, thread_id: UUID | None,
         root_cm.__exit__(None, None, None)
         raise
 
-    # regex memory extraction as a safety net when the planner didn't call the memory tools itself
-    if not any(p["tool"] in ("save_preference", "remember_fact") for p in plan):
+    # regex memory extraction as a safety net when the planner didn't (successfully) call the memory tools itself
+    saved_ok = any(p["tool"] in ("save_preference", "remember_fact") and p.get("ok", True) for p in plan)
+    if not saved_ok:
         for cand in extract_candidates(message, ctx.publisher_names()):
             if cand["kind"] == "fact":
                 await repo.add_fact(conn, user.id, cand["text"], "chat", ctx.campaign.id if ctx.campaign else None, it.id)
@@ -149,6 +162,8 @@ async def turn(conn, user: UserCtx, catalog: Catalog, *, thread_id: UUID | None,
     # Planner-only turns (questions, deterministic edits) are free: usage is recorded on the interaction but not charged.
     billable = ctx.usage if llm_tool_ran else Usage()
     info = await credits.settle(conn, user.id, action, billable, interaction_id=it.id, campaign_id=ctx.campaign.id if ctx.campaign else None)
+    if nested_charged:  # surface the generation's own charge in this turn's receipt
+        info = info.model_copy(update={"charged": info.charged + nested_charged, "base": info.base + nested_charged})
     await repo.close_interaction(conn, it.id, status="done", plan=plan, usage=ctx.usage.to_json(), credits_base=info.base, credits_usage=info.usage,
                                  duration_ms=int((time.perf_counter() - it.started) * 1000))
     if ctx.campaign and not any(c.get("type") == "campaign_summary" for c in cards) and mutated:
@@ -156,6 +171,7 @@ async def turn(conn, user: UserCtx, catalog: Catalog, *, thread_id: UUID | None,
     await repo.add_chat_message(conn, thread_id, user.id, "assistant", {"text": reply}, cards, it.id)
     obs.finish_trace(root, output={"reply": reply, "plan": plan, "cards": [c.get("type") for c in cards], "credits": info.model_dump()}, metadata={"usage": ctx.usage.to_json()})
     root_cm.__exit__(None, None, None)
+    await em.end()
     return {"thread_id": str(thread_id), "campaign_id": str(ctx.campaign.id) if ctx.campaign else None, "reply": reply, "cards": cards,
             "credits": info.model_dump(), "validation": [v.model_dump() for v in validation]}
 
@@ -167,16 +183,48 @@ def campaign_card(c: Campaign, catalog: Catalog, validation) -> dict:
             "checks_passing": sum(v.passed for v in validation), "checks_total": len(validation)}
 
 
-async def _dispatch(conn, ctx: AgentCtx, name: str, args: dict) -> tuple[dict, dict | None]:
+def _args_detail(name: str, args: dict) -> str | None:
+    if name == "generate_campaign":
+        return (args.get("brief") or "")[:120]
+    if name in ("drop_publisher", "regenerate_creative", "update_creative"):
+        return args.get("publisher_id") or args.get("persona_id")
+    if name == "set_budget":
+        return f"${args.get('total_usd'):,}" if args.get("total_usd") else None
+    if name in ("save_preference", "remember_fact"):
+        return str(args.get("value") or args.get("text") or "")[:100]
+    return None
+
+
+def _result_detail(name: str, result: dict) -> str | None:
+    if "error" in result:
+        return str(result.get("message") or result["error"])[:160]
+    if name == "generate_campaign":
+        return f"{result.get('credits_charged', 0)} credits" if "credits_charged" in result else ("needs clarification" if result.get("clarity_too_low") else None)
+    if name == "score_clarity":
+        return f"clarity {result.get('score')} · {result.get('label')}"
+    return result.get("note") or None
+
+
+async def _dispatch(conn, ctx: AgentCtx, name: str, args: dict, card_id: str | None = None) -> tuple[dict, dict | None]:
     """Run one tool call from the planner; return (result for the model, card for the UI)."""
     catalog = ctx.catalog
+    em = events.current()
     if name == "generate_campaign":
         brief = (args.get("brief") or "").strip()
         answers = [str(a) for a in (args.get("answers") or [])]
         if not brief:
             return {"error": "brief required"}, None
+        stage_ids: dict[str, str] = {}
+
+        async def on_stage(ev) -> None:  # generation stages become tool_event rows under the card
+            if not card_id:
+                return
+            eid = stage_ids.get(ev.stage)
+            status = events.COMPLETED if ev.status == "done" else events.FAILED if ev.status == "fail" else events.RUNNING
+            stage_ids[ev.stage] = await em.tool_event(card_id, ev.stage, status, ev.detail or None, event_id=eid)
+
         try:
-            resp: MutationResponse = await orchestrator.run_guided(conn, ctx.user, catalog, ctx.memory, brief=brief, answers=answers, parent_campaign_id=None, emit=None)
+            resp: MutationResponse = await orchestrator.run_guided(conn, ctx.user, catalog, ctx.memory, brief=brief, answers=answers, parent_campaign_id=None, emit=on_stage)
         except orchestrator.RunError as e:
             if e.code == "clarity_too_low" and e.payload:
                 return {"clarity_too_low": True, "score": e.payload["score"], "questions": e.payload["questions"]}, {"type": "questions", "score": e.payload["score"], "questions": e.payload["questions"]}

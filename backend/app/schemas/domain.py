@@ -18,7 +18,8 @@ BusinessModel = Literal["one_time", "subscription", "service", "b2b", "app", "un
 # ----------------------------------------------------------------------------- clarity
 class ClarityQuestion(BaseModel):
     q: str
-    opts: list[str] = Field(min_length=2, max_length=5)
+    opts: list[str] = Field(min_length=2, max_length=6)
+    multi: bool = Field(default=False, description="True when several options can apply at once (e.g. product types sold, audiences served)")
 
 
 class ParsedBrief(BaseModel):

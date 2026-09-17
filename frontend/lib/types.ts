@@ -1,6 +1,6 @@
 /** API types — mirror backend/app/schemas/domain.py. */
 
-export interface ClarityQuestion { q: string; opts: string[] }
+export interface ClarityQuestion { q: string; opts: string[]; multi?: boolean }
 export interface ParsedBrief {
   product: string; buyer: string; price_tier: string; price_point_usd: number | null; business_model: string;
   categories: string[]; differentiators: string[]; is_consumer_commerce: boolean;
@@ -50,6 +50,7 @@ export interface Persona {
 }
 export interface Catalog { publishers: Publisher[]; personas: Persona[] }
 export interface StageEvent { stage: string; status: "run" | "done" | "fail"; detail: string; ms: number }
+export interface YieldEvent { kind: "thought" | "tool_card" | "tool_event" | "head_text" | "turn_end"; event_id: string; parent_id?: string; status?: "running" | "completed" | "failed"; title?: string; detail?: string; tool?: string }
 export interface LedgerRow { id: string; created_at: string; reason: string; delta: number; usage: { total_tokens: number; mix: string } | null; balance_after: number; campaign_id: string | null; campaign_name: string | null; interaction_kind: string | null }
 export interface CreditsPage { balance: number; grant: number; pricing: { base: Record<string, number>; tokens_per_credit: number; model_weight: Record<string, number> }; ledger: LedgerRow[]; consistent: boolean }
 export interface Memory { preferences: Record<string, unknown>; sources: Record<string, { source: string; at: string }>; facts: { id: string; text: string; source: string; campaign_id: string | null; created_at: string | null }[]; keys: Record<string, string> }
