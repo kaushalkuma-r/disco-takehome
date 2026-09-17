@@ -84,6 +84,7 @@ class Creative(BaseModel):
     body: str = Field(max_length=400)
     cta: str = Field(max_length=40)
     rationale: str = ""
+    assumptions: list[str] = Field(default_factory=list, description="Claims the copy implies that the brief did not state; confirm before running")
 
 
 # ----------------------------------------------------------------------------- config

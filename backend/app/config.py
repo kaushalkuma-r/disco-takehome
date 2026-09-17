@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     prompts_dir: Path = REPO_ROOT / "prompts"
     debug: bool = False
 
+    # observability (Langfuse); empty keys = tracing off
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_base_url: str = "https://cloud.langfuse.com"
+    langfuse_environment: str = "local"
+    app_version: str = "0.1.0"
+
     # limits
     rate_generate_per_min: int = 10
     rate_chat_per_min: int = 60

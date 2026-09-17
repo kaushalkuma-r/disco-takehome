@@ -26,6 +26,7 @@ class ClarityIn(BaseModel):
 
 
 class ClarityOut(BaseModel):
+    analysis: str = Field(description="Step 1 reasoning, 2-4 sentences")
     score: int = Field(ge=0, le=100)
     label: str
     summary: str
@@ -53,7 +54,12 @@ class ScoreClarity(Tool[ClarityIn, ClarityResult]):
         if inp.answers and score < 60:
             score = max(score, 65)  # answered questions always unlock generation; the summary says "Interpreted as:"
         label = "Vague" if score < 60 else "Usable" if score < 80 else "Clear"
-        questions = out.questions[:3] if score < 60 else []
+        questions = []
+        if score < 60:
+            for q in out.questions[:3]:
+                opts = [o for o in q.opts if o.strip().lower() not in ("other", "other (please specify)", "something else")][:5]
+                if len(opts) >= 2:
+                    questions.append(ClarityQuestion(q=q.q, opts=opts))
         await ctx.stage("Parsing brief", "done", f"clarity {score}", int((time.perf_counter() - t0) * 1000))
         return ClarityResult(score=score, label=label, summary=out.summary, signals=out.signals[:5], missing=out.missing, questions=questions,
                              parsed_brief=out.parsed_brief, answers=inp.answers)
@@ -99,6 +105,7 @@ class _Excl(BaseModel):
 
 
 class RankOut(BaseModel):
+    analysis: str = Field(description="Step 1 reasoning, 3-5 sentences")
     adjustments: list[_Adjust]
     exclusions: list[_Excl]
 
@@ -133,8 +140,10 @@ class RankPublishers(Tool[RankIn, RankResult]):
             summary += f"\nAdvertiser feedback to apply: {inp.instruction}"
         if inp.focus_publisher_id:
             summary += f"\nRe-evaluate publisher {inp.focus_publisher_id} in light of the feedback; keep the others' deltas at 0."
+        top_ids = {s.id for s in top}
+        others = "\n".join(f"{p.id} · {p.name} · {p.category} · {p.audience.age_skew} · AOV ${p.avg_order_value_usd} · {p.notes}" for p in cat.publishers if p.id not in top_ids)
         out, usage = await llm.structured("rank", RankOut, tool=self.name, brief_summary=summary, parsed_brief=ctx.campaign.parsed_brief.model_dump_json(),
-                                          candidates=json.dumps(cands, ensure_ascii=False), memory=ctx.memory.render(ctx.publisher_names()))
+                                          candidates=json.dumps(cands, ensure_ascii=False), others=others or "(none)", memory=ctx.memory.render(ctx.publisher_names()))
         ctx.usage.add(usage)
 
         banned = set(ctx.memory.preferences.get("banned_publishers") or [])
@@ -160,11 +169,20 @@ class RankPublishers(Tool[RankIn, RankResult]):
                 seen.add(ex.id)
                 excluded.append(ExcludedPublisher(id=ex.id, score=by_id[ex.id].score, why=ex.reason.strip()))
         recommended.sort(key=lambda s: -s.score)
-        if not recommended:  # never return nothing: keep the best two with an honest note
-            for s in top[:2]:
-                recommended.append(PublisherScore(id=s.id, score=s.score, prescore=s.prescore, bd=s.bd,
-                                                  why="Weak fit: this catalog is consumer commerce and nothing matches well; kept as the least-bad reach option."))
-                excluded = [e for e in excluded if e.id != s.id]
+        # A plan needs ≥3 placements to produce signal: top up from the next-best candidates (≥40) as capped reach tests,
+        # and never return nothing even for an off-category brief.
+        if len(recommended) < 3:
+            pool = sorted((e for e in excluded if e.id not in banned and e.score >= EXCLUDE_BELOW), key=lambda e: -e.score)
+            if not recommended and not pool:
+                pool = [ExcludedPublisher(id=s.id, score=s.score, why="Weak fit: this catalog is consumer commerce and nothing matches well; kept as the least-bad reach option.") for s in top[:2]]
+            for e in pool:
+                if len(recommended) >= 3:
+                    break
+                s = by_id[e.id]
+                why = e.why if e.why.lower().startswith(("weak fit", "reach test")) else f"Reach test (capped): {e.why}"
+                recommended.append(PublisherScore(id=s.id, score=e.score, prescore=s.prescore, llm_delta=e.score - s.prescore, bd=s.bd, why=why))
+                excluded = [x for x in excluded if x.id != e.id]
+            recommended.sort(key=lambda s: -s.score)
         recommended = recommended[:5]
         excluded.sort(key=lambda e: -e.score)
         await ctx.stage("Scoring 20 publishers", "done", f"{len(recommended)} recommended", int((time.perf_counter() - t0) * 1000))
@@ -189,6 +207,7 @@ class _Skip(BaseModel):
 
 
 class PersonasOut(BaseModel):
+    analysis: str = Field(description="Step 1 reasoning")
     chosen: list[_Pick]
     skipped: list[_Skip]
 
@@ -249,9 +268,11 @@ class _Cr(BaseModel):
     body: str
     cta: str
     rationale: str
+    assumptions: list[str] = Field(default_factory=list)
 
 
 class CreativesOut(BaseModel):
+    analysis: str = Field(description="Step 1: facts available in the brief and the angle per persona")
     creatives: list[_Cr]
 
 
@@ -290,9 +311,37 @@ class WriteCreatives(Tool[CreativesIn, CreativesResult]):
         creatives: list[Creative] = []
         for c in out.creatives:
             if c.persona_id in wanted and not any(x.persona_id == c.persona_id for x in creatives):
-                creatives.append(Creative(persona_id=c.persona_id, headline=c.headline.strip()[:120], body=c.body.strip()[:400], cta=c.cta.strip()[:40], rationale=c.rationale.strip()))
+                creatives.append(Creative(persona_id=c.persona_id, headline=_fit(_no_emdash(c.headline), 80), body=_fit_body(_no_emdash(c.body)), cta=_fit(c.cta, 24),
+                                          rationale=c.rationale.strip(), assumptions=[a.strip() for a in c.assumptions if a.strip()][:3]))
         await ctx.stage("Writing creative", "done", f"{len(creatives)} variants", int((time.perf_counter() - t0) * 1000))
         return CreativesResult(creatives=creatives)
+
+
+def _no_emdash(text: str) -> str:
+    """House style: no em dashes in ad copy (the prompt forbids them; this is the guard)."""
+    return text.replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ").replace("–", "-")
+
+
+def _fit(text: str, limit: int) -> str:
+    """Trim at a word boundary to the character limit (the model usually complies; this is the guard)."""
+    t = " ".join(text.split())
+    if len(t) <= limit:
+        return t
+    cut = t[:limit].rsplit(" ", 1)[0].rstrip(",;:-— ")
+    return cut if len(cut) > limit // 2 else t[:limit].rstrip()
+
+
+def _fit_body(text: str) -> str:
+    """Bodies must be 60–240 chars: trim at the last sentence end that fits, else at a word boundary."""
+    t = " ".join(text.split())
+    if len(t) <= 240:
+        return t
+    head = t[:240]
+    for sep in (". ", "! ", "? "):
+        i = head.rfind(sep)
+        if i >= 60:
+            return head[: i + 1]
+    return _fit(t, 240)
 
 
 # ============================================================================ config
@@ -301,6 +350,7 @@ class ConfigIn(BaseModel):
 
 
 class ConfigNoteOut(BaseModel):
+    analysis: str = Field(description="Step 1 reasoning")
     objective: str
     bid_strategy: str
     primary_kpi: str

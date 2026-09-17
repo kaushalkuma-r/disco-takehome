@@ -120,7 +120,8 @@ for a, b, w in [
     ("small_batch", "candles", 0.5), ("small_batch", "home_decor", 0.4), ("candles", "home_decor", 0.6), ("candles", "home", 0.5),
     ("outerwear", "apparel", 0.7), ("outerwear", "activewear", 0.4), ("skiing", "activewear", 0.3), ("handbags", "apparel", 0.5), ("handbags", "classic", 0.4),
     ("bedding", "home", 0.8), ("linen", "bedding", 0.9), ("protein_bars", "supplements", 0.6), ("protein_bars", "convenience", 0.4), ("protein_bars", "groceries", 0.4),
-    ("cleaning", "household", 0.9), ("b2b_saas", "saas", 0.9),
+    ("cleaning", "household", 0.9), ("b2b_saas", "saas", 0.9), ("supplements", "natural", 0.5), ("supplements", "organic", 0.4), ("vitamins", "natural", 0.5),
+    ("wellness", "organic", 0.4), ("wellness", "natural", 0.5), ("gut_health", "supplements", 0.6), ("gut_health", "wellness", 0.7),
 ]:
     _adj(a, b, w)
 

@@ -8,9 +8,12 @@ enforced with OpenAI structured outputs — the model cannot return a shape the 
 
 | File | Tool | Model | Output |
 |---|---|---|---|
-| `clarity.md` | score_clarity | gpt-4.1-mini | ClarityOut |
-| `rank.md` | rank_publishers | gpt-4.1-mini | RankOut |
-| `personas.md` | pick_personas | gpt-4.1-mini | PersonasOut |
-| `creative.md` | write_creatives / regenerate_creative | gpt-4.1 | CreativesOut |
-| `config_note.md` | build_config | gpt-4.1-mini | ConfigNoteOut |
-| `chat_system.md` | chat planner | gpt-4.1 | tool calls |
+| `_context.md` | prepended to every prompt | — | shared placement/catalog context + house rules |
+| `clarity.md` (v4) | score_clarity | gpt-4.1-mini | ClarityOut |
+| `rank.md` (v5) | rank_publishers | gpt-4.1-mini | RankOut |
+| `personas.md` (v3) | pick_personas | gpt-4.1-mini | PersonasOut |
+| `creative.md` (v4) | write_creatives / regenerate_creative | gpt-4.1 | CreativesOut (+assumptions) |
+| `config_note.md` (v2) | build_config | gpt-4.1-mini | ConfigNoteOut |
+| `chat_system.md` (v4) | chat planner | gpt-4.1 | tool calls |
+
+Every output schema starts with an `analysis` field so the model reasons before it answers (structured outputs preserve field order). Creatives also return `assumptions`: facts the advertiser must confirm because the copy implies them and the brief did not state them.

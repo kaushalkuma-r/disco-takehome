@@ -41,8 +41,16 @@ def _parse(path: Path) -> Prompt:
 
 @lru_cache
 def load(name: str) -> Prompt:
-    return _parse(get_settings().prompts_dir / f"{name}.md")
+    p = _parse(get_settings().prompts_dir / f"{name}.md")
+    if name.startswith("_"):
+        return p
+    ctx_path = get_settings().prompts_dir / "_context.md"
+    if ctx_path.exists():
+        ctx = _parse(ctx_path)
+        body = "\n".join(line for line in ctx.body.splitlines() if not line.startswith("(Shared context"))  # drop the loader note
+        p = Prompt(name=p.name, version=p.version, model=p.model, inputs=p.inputs, body=body.strip() + "\n\n---\n\n" + p.body.strip())
+    return p
 
 
 def versions() -> dict[str, int]:
-    return {p.stem: load(p.stem).version for p in get_settings().prompts_dir.glob("*.md") if p.stem != "README"}
+    return {p.stem: load(p.stem).version for p in get_settings().prompts_dir.glob("*.md") if p.stem not in ("README",) and not p.stem.startswith("_")}
